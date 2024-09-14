@@ -41,7 +41,7 @@ Ms4525do::Ms4525do(TwoWire *bus, const uint8_t addr, const float p_max,
   p_max_ = p_max;
   if (type == OUTPUT_TYPE_A) {
     c_ = 0.1f;
-    d_ = 0.9f;
+    d_ = 0.8f;
   } else {
     c_ = 0.05f;
     d_ = 0.9f;
@@ -55,7 +55,7 @@ void Ms4525do::Config(TwoWire *bus, const uint8_t addr, const float p_max,
   p_max_ = p_max;
   if (type == OUTPUT_TYPE_A) {
     c_ = 0.1f;
-    d_ = 0.9f;
+    d_ = 0.8f;
   } else {
     c_ = 0.05f;
     d_ = 0.9f;
