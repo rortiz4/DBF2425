@@ -7,6 +7,7 @@ header file in your project source file (C, C++, etc) located in `src` folder
 by including it, with the C preprocessing directive `#include'.
 
 ```src/main.c
+//
 
 #include "header.h"
 
