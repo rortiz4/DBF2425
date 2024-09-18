@@ -1,4 +1,4 @@
-#include <LittleFS.h> // Older/Deprecated alternative: SPIFFS.h
+#include <Arduino.h>
 #include "flash_filesystem.h"
 
 void setup() {
