@@ -39,14 +39,6 @@ bool init_bno085() {
         Serial.println("\nCould not enable magnetic field calibrated");
         return false;
     }
-    if (!bno085.enableReport(SH2_LINEAR_ACCELERATION)) {
-        Serial.println("\nCould not enable linear acceleration");
-        return false;
-    }
-    if (!bno085.enableReport(SH2_GRAVITY)) {
-        Serial.println("\nCould not enable gravity vector");
-        return false;
-    }
 
     Serial.println("DONE!");
     return true;
@@ -152,7 +144,15 @@ void read_ms4525do(float* output_vector) {
     }
     float raw_diff_pressure = ms4525do.pres_pa();
     float temp_C = ms4525do.die_temp_c();
-    float raw_airspeed = sqrt((2*raw_diff_pressure)/AIR_DENSITY); // in m/s from Bernoulli's Equation
+
+    float raw_airspeed;
+    if (raw_diff_pressure < 0) {
+        raw_airspeed = -sqrt(-(2*raw_diff_pressure)/AIR_DENSITY); // in m/s from Bernoulli's Equation
+    }
+    else {
+        raw_airspeed = sqrt((2*raw_diff_pressure)/AIR_DENSITY);
+    }
+
     float corr_diff_pressure = raw_diff_pressure; // Temporarily until accurately calibrated
     float corr_airspeed = raw_airspeed; // Temporarily until accurately calibrated
 

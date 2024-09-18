@@ -27,7 +27,7 @@ void loop() {
 
     Serial.printf("Orientation (Quaternion) - real: %.*f, i: %.*f, j: %.*f, k: %.*f\n", \
     DP, imu_output_vector[0], DP, imu_output_vector[1], DP, imu_output_vector[2], DP, imu_output_vector[3]);
-    Serial.printf("Acceleration (m/s) - x: %.*f, y: %.*f, z: %.*f\n", \
+    Serial.printf("Acceleration (m/s^2) - x: %.*f, y: %.*f, z: %.*f\n", \
     DP, imu_output_vector[4], DP, imu_output_vector[5], DP, imu_output_vector[6]);
     Serial.printf("Angular Velocity (rad/s) - x: %.*f, y: %.*f, z: %.*f\n", \
     DP, imu_output_vector[7], DP, imu_output_vector[8], DP, imu_output_vector[9]);
