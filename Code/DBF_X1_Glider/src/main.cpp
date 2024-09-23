@@ -7,13 +7,16 @@
 #define I2C_CLOCK_SPEED 100000 // 100 kHz
 #define CONFIG_FILE_PATH "/config_DO_NOT_DELETE.sys" // File contains only filenumber of next file to be written
 #define DATAFILE_LINE_BUFFER_SIZE 256
-#define MAX_STORAGE_BYTES 2650000
+#define MAX_STORAGE_BYTES 2650000 // 4MB-1.32MB w/ extra buffer for config file in /, other folders (not /data), etc.
 
 #define LOOP_DELAY 250 // milliseconds to wait between processing data.
+
+#define LED_PIN 15
 
 char datafile[32]; // Note that filename cannot be more than 31 +\0 characters long.
 unsigned long line_num = 1;
 unsigned long current_storage_used = 0;
+bool led_state = false;
 
 void init_serial_i2c() {
     Serial.begin(SERIAL_BAUDRATE);
@@ -31,10 +34,13 @@ void float_data_to_string(float* data, int data_size, char * output_string, bool
 
 void setup() {
     init_serial_i2c();
+    pinMode(LED_PIN, OUTPUT);
     delay(3000);
     init_fs(); // Initialize littlefs
     init_ms4525do(); // Initialize Diff Pressure Sensor for Airspeed
+    digitalWrite(LED_PIN, true);
     delay(2000);
+    digitalWrite(LED_PIN, false);
 
     current_storage_used = list_files("/data");
 
@@ -58,6 +64,7 @@ void setup() {
     if (current_storage_used > MAX_STORAGE_BYTES) {
         while(1) {
             Serial.println("STORAGE FULL! Please clear up some space.");
+            digitalWrite(LED_PIN, false);
         }
     }
 
@@ -77,9 +84,12 @@ void loop() {
     if (current_storage_used > MAX_STORAGE_BYTES) {
         while(1) {
             Serial.println("STORAGE FULL! Please clear up some space.");
+            digitalWrite(LED_PIN, false);
         }
     }
     append_file(datafile, csv_output_string, false);
     line_num++;
+    led_state = ~led_state;
+    digitalWrite(LED_PIN, led_state);
     delay(LOOP_DELAY);
 }
