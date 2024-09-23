@@ -139,6 +139,7 @@ void read_bno085(float* output_vector) {
 
 // MS4525DO
 void read_ms4525do(float* output_vector) {
+    // Must initialize a vector like so: float output_vector[5]; to store data.
     while(!ms4525do.Read()) {
         ;
     }

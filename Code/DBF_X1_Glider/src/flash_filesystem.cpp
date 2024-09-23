@@ -1,4 +1,5 @@
 #include <LittleFS.h> // Older/Deprecated alternative: SPIFFS.h
+#define MAX_FILE_SIZE 4000000 // Max filesize is 4MB
 
 void init_fs() {
     // Initialize LittleFS
@@ -19,12 +20,13 @@ void create_dir(const char* dir_path) {
   }
 }
 
-void list_files(const char* dir_path) {
+unsigned long list_files(const char* dir_path) {
+    unsigned long folder_size = 0;
     // Function to list files in the specified directory. MUST PROVIDE DIRECTORY AS PARAMETER, NOT FILE.
     File dir = LittleFS.open(dir_path);
     if (!dir || !dir.isDirectory()) {
         Serial.printf("Failed to open directory \"%s\" or directory doesn't exist\n", dir_path);
-        return;
+        return 0;
     }
     else {
         File file = dir.openNextFile();
@@ -41,34 +43,66 @@ void list_files(const char* dir_path) {
                 Serial.print(file.name());
                 Serial.print(" | Size (Bytes): ");
                 Serial.println(file.size());
+                folder_size += file.size();
                 file = dir.openNextFile();
             }
         }
     }
+    Serial.print("Total current directory size (excluding subfolders) = ");
+    Serial.print(folder_size);
+    Serial.println(" Bytes");
+    return folder_size;
 }
 
 // Function to read data from a file in LittleFS
-void read_file(const char* path) {
+unsigned int read_file(const char* path, const char* file_contents, bool serial_output, bool var_output, int read_delay, bool read_complete) {
     Serial.printf("Reading from file: %s\n", path);
-    File file = LittleFS.open(path);
+    char* file_contents_char_array = const_cast<char*>(file_contents);
+
+    File file = LittleFS.open(path, "r");
     if (!file) {
         Serial.println("Failed to open file for reading");
-        return;
+        return 0;
     }
-    while (file.available()) {
-        Serial.write(file.read());  // Print the content to Serial
+
+    if (var_output) {
+        unsigned int index = 0;
+        while (file.available() && index < MAX_FILE_SIZE - 1) { // Leave space for null terminator
+            file_contents_char_array[index++] = (char)file.read();
+        }
+        file_contents_char_array[index] = '\0'; // Null-terminate the string
+        file_contents = (const char*)file_contents_char_array;
+
+        if (serial_output) {
+            Serial.write(file_contents); // Print the content to Serial
+        }
     }
-    file.close();  // Always close the file
-    Serial.println("\nRead complete!\n");
+    else if (serial_output) {
+        while(file.available()) {
+            char file_byte = (char)file.read();
+            Serial.write(file_byte);
+            if(file_byte == '\n') delay(read_delay);
+        }
+    }
+    else {
+        Serial.println("No Read Output Sink Specified. File reading skipped.");
+        return 0;
+    }
+    
+    
+    unsigned int byte_count = file.size();
+    file.close(); // Always close the file
+    if (read_complete) Serial.println("\nRead complete!\n");
+    return byte_count;
 }
 
 // Function to write data to a file in LittleFS
-void write_file(const char* path, const char* message, bool add_newline) {
+unsigned int write_file(const char* path, const char* message, bool add_newline) {
     Serial.printf("Writing to file: %s\n", path);
     File file = LittleFS.open(path, FILE_WRITE);
     if (!file) {
         Serial.println("Failed to open file for writing");
-        return;
+        return 0;
     }
     if (add_newline) {
         file.println(message);  // Write the message to the file
@@ -76,11 +110,13 @@ void write_file(const char* path, const char* message, bool add_newline) {
     else {
         file.print(message);
     }
+    unsigned int byte_count = file.size();
     file.close();  // Always close the file
     Serial.println("Write successful!");
+    return byte_count;
 }
 
-void append_file(const char* path, const char* message, bool add_newline) {
+unsigned int append_file(const char* path, const char* message, bool add_newline) {
     // If file does not exist, it will be created.
     Serial.printf("Appending to file: %s\n", path);
     File file = LittleFS.open(path, FILE_APPEND);
@@ -88,7 +124,7 @@ void append_file(const char* path, const char* message, bool add_newline) {
         File file = LittleFS.open(path, FILE_WRITE);
         if (!file) {
             Serial.println("Failed to open file for writing");
-            return;
+            return 0;
         }
         Serial.println("File does not exist, but will be created for writing.");
     }
@@ -99,8 +135,10 @@ void append_file(const char* path, const char* message, bool add_newline) {
     else {
         file.print(message);
     }
+    unsigned int byte_count = file.size();
     file.close();  // Always close the file
     Serial.println("Append successful!");
+    return byte_count;
 }
 
 void delete_file(const char* path) {

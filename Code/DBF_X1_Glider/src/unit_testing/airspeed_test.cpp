@@ -29,7 +29,7 @@ void loop() {
     DP, ms4525do_output_vector[2], DP, ms4525do_output_vector[0]);
     Serial.printf("Raw / Corrected Airspeed (m/s): %.*f / %.*f\n", \
     DP, ms4525do_output_vector[3], DP, ms4525do_output_vector[1]);
-    Serial.printf("Temperature (C) - x: %.*f\n", DP, ms4525do_output_vector[4]);
+    Serial.printf("Temperature (C): %.*f\n", DP, ms4525do_output_vector[4]);
 
     delay(250);
 }

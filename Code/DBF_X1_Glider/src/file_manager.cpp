@@ -1,10 +1,14 @@
 #include <Arduino.h>
 #include "flash_filesystem.h"
 
-#define SERIAL_SPEED 115200         // Define serial communication speed
+#define READ_COMPLETE 0 // 0 means don't print "Read complete at end of serial output"
+#define CAT_READ_DELAY 10 // Delay for reading file data from serial
+#define SERIAL_BAUDRATE 115200         // Define serial communication speed
 #define INPUT_BUFFER_SIZE 200       // Define memory to reserve for input string
 #define COMMAND_LINE_TERMINATOR '\n' // Define the command line terminator
 #define STARTING_DIRECTORY "/"       // Define the starting directory
+#define CONFIG_FILE_PATH "/config_DO_NOT_DELETE.sys" // File contains only filenumber of next file to be written
+#define DATA_DIRECTORY "/data" // Folder contains sensor/flight data
 
 String inputString = "";          // String to hold incoming data
 bool stringComplete = false;      // Flag when input is complete
@@ -24,13 +28,7 @@ void help() {
     Serial.println();
     Serial.print("Available (case-insensitive) commands that must terminate with \\n:");
 
-    Serial.println("pwd                     : Prints the current directory");
-    Serial.println("                          Function Used: print_working_directory()");
-
-    Serial.println("cd [</path/to/folder>]  : Changes the current directory");
-    Serial.println("                          Function Used: change_directory(const char* dir_path)");
-
-    Serial.println("ls [</path/to/folder>]  : Lists files in the specified directory or current directory if none provided");
+    Serial.println("ls [</path/to/folder>]  : Lists files in the specified directory");
     Serial.println("                          Function Used: list_files(const char* dir_path)");
 
     Serial.println("mkdir </path/to/folder> : Creates a directory at the specified path");
@@ -44,6 +42,15 @@ void help() {
 
     Serial.println("rmdir </path/to/folder> : Removes the specified directory");
     Serial.println("                          Function Used: delete_dir(const char* dir_path)");
+
+    Serial.println("pwd                     : Prints the current directory");
+    Serial.println("                          Function Used: print_working_directory()");
+
+    Serial.println("cd [</path/to/folder>]  : Changes the current directory");
+    Serial.println("                          Function Used: change_directory(const char* dir_path)");
+
+    Serial.println("reset                   : DELETES ALL DATA and resets config file filenumber");
+    Serial.println("                          Function Used: reset_fs_data()");
 
     Serial.println("help                    : Displays this help message");
     Serial.println("                          Function Used: help()");
@@ -84,6 +91,28 @@ void change_directory(const char* dir_path) {
     Serial.println(currentDirectory);
 }
 
+// This function is called automatically whenever there is serial input
+void serialEvent() {
+    while (Serial.available()) {
+        // Get the new byte
+        char inChar = (char)Serial.read();
+
+        // If the input ends with the command line terminator, mark the string as complete
+        if (inChar == COMMAND_LINE_TERMINATOR) {
+            stringComplete = true;
+            break;
+        }
+        // Add it to the input string
+        else {inputString += inChar;}
+    }
+}
+
+void reset_fs_data() {
+    delete_dir(DATA_DIRECTORY);
+    create_dir(DATA_DIRECTORY);
+    write_file(CONFIG_FILE_PATH, "000");
+}
+
 // Function to split the input string and process the command
 void processCommand(String input) {
     // Convert command to lowercase and extract it
@@ -107,13 +136,14 @@ void processCommand(String input) {
         if (argument.length() > 0) {
             list_files(arg);
         } else {
-            list_files(currentDirectory.c_str());
+            Serial.println("ERROR: NO DIRECTORY PATH PROVIDED. PLEASE TRY AGAIN!");
         }
     } else if (strcmp(command, "cat") == 0) {
         if (argument.length() == 0) {
             Serial.println("ERROR: NO FILE PATH PROVIDED. PLEASE TRY AGAIN!");
         } else {
-            read_file(arg);
+            if (!READ_COMPLETE) read_file(arg,"",true,false,CAT_READ_DELAY,false);
+            else read_file(arg,"",true,false,CAT_READ_DELAY,true);
         }
     } else if (strcmp(command, "rm") == 0) {
         if (argument.length() == 0) {
@@ -127,6 +157,24 @@ void processCommand(String input) {
         } else {
             delete_dir(arg);
         }
+    } else if (strcmp(command, "reset") == 0) {
+        Serial.println("Are you sure? ALL DATA WILL BE WIPED!!! Enter y/n to continue.");
+        while(1) {
+            if (Serial.available()) {
+                char serial_char = (char)Serial.read();
+                if (serial_char == COMMAND_LINE_TERMINATOR) {
+                    break;
+                }
+                else if (serial_char == 'y' || serial_char == 'Y') {
+                    reset_fs_data();
+                    Serial.println("ALL DATA WIPED successfully and config filenumber reset to 00.");
+                }
+                else {
+                    Serial.println("Operation Cancelled.");
+                }
+            }
+        }
+
     } else if (strcmp(command, "cd") == 0) {
         if (argument.length() == 0) {
             // No argument provided, change to STARTING_DIRECTORY
@@ -140,30 +188,17 @@ void processCommand(String input) {
         help();
     } else {
         Serial.println("ERROR: UNKNOWN COMMAND PROVIDED. PLEASE TRY AGAIN!");
+        Serial.println(command);
         Serial.println("Use help for a list of possible commands and usage.");
-    }
-}
-
-// This function is called automatically whenever there is serial input
-void serialEvent() {
-    while (Serial.available()) {
-        // Get the new byte
-        char inChar = (char)Serial.read();
-
-        // Add it to the input string
-        inputString += inChar;
-
-        // If the input ends with the command line terminator, mark the string as complete
-        if (inChar == COMMAND_LINE_TERMINATOR) {
-            stringComplete = true;
-        }
     }
 }
 
 void setup() {
     // Start the serial communication
-    Serial.begin(SERIAL_SPEED);
+    delay(3000);
+    Serial.begin(SERIAL_BAUDRATE);
     inputString.reserve(INPUT_BUFFER_SIZE);  // Reserve memory to avoid dynamic allocation
+    init_fs();
 
     // Display help message and available commands
     help();
@@ -172,14 +207,13 @@ void setup() {
 void loop() {
     // Check if the string is complete
     if (stringComplete) {
+        stringComplete = false;
         // Process the command
         processCommand(inputString);
-
         // Clear the string and reset the flag
         inputString = "";
-        stringComplete = false;
     }
-
-    // Continue reading serial data
-    serialEvent();
+    else {
+        serialEvent();
+    }
 }

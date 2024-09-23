@@ -81,6 +81,7 @@ bool Ms4525do::Read() {
   }
   status_ = (buf_[0] >> 6) & 0x03;
   pres_cnts_ = static_cast<uint16_t>(buf_[0] & 0x3F) << 8 | buf_[1];
+  //Serial.println(pres_cnts_);
   temp_cnts_ = static_cast<uint16_t>(buf_[2]) << 3 | buf_[3] & 0xE0 >> 5;
   pres_psi_ = (static_cast<float>(pres_cnts_) - c_ * P_CNT_) *
               ((p_max_ - p_min_) / (d_ * P_CNT_)) + p_min_;
