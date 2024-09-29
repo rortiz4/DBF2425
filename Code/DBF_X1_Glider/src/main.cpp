@@ -27,8 +27,15 @@ void init_serial_i2c() {
 void float_data_to_string(float* data, int data_size, char * output_string, bool serial_print=false) {
     static unsigned long time_epoch = micros();
     unsigned long current_time = micros();
-    sprintf(output_string, "%lu,%lu,%.*f,%.*f,%.*f,%.*f,%.*f\n", line_num, (current_time-time_epoch), DP, data[0], DP, data[1], \
-    DP, data[2], DP, data[3], DP, data[4]);
+    sprintf(output_string, "%lu,%lu,%.*f,%.*f,%.*f,%.*f,%.*f\n", \
+    line_num, \
+    (current_time-time_epoch), \
+    // Raw Diff Pressure
+    DP, data[2], \
+    // Raw Airspeed
+    DP, data[3], \
+    // Temperature
+    DP, data[4]);
     if(serial_print) {
         Serial.print(output_string);
     }
@@ -76,8 +83,10 @@ void setup() {
 
 void loop() {
     char csv_output_string[DATAFILE_LINE_BUFFER_SIZE] = "";
-    const int ms4525do_field_count = 5;
+    const int ms4525do_field_count = 5; // Raw + Corrected Airspeed & Pressure + Temperature
+    const int imu_field_count = 12; // Acce, Gyro, Mag, Orientation
     float ms4525do_output[ms4525do_field_count] = {0.0}; // Initialize to 0 every loop time.
+    float imu_output[imu_field_count] = {0.0};
     read_ms4525do(ms4525do_output);
     float_data_to_string(ms4525do_output,ms4525do_field_count,csv_output_string, false);
     // Serial.println(datafile);
