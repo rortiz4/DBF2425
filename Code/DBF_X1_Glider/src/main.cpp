@@ -25,7 +25,9 @@ void init_serial_i2c() {
 }
 
 void float_data_to_string(float* data, int data_size, char * output_string, bool serial_print=false) {
-    sprintf(output_string, "%lu,%.*f,%.*f,%.*f,%.*f,%.*f\n", line_num, DP, data[0], DP, data[1], \
+    static unsigned long time_epoch = micros();
+    unsigned long current_time = micros();
+    sprintf(output_string, "%lu,%lu,%.*f,%.*f,%.*f,%.*f,%.*f\n", line_num, (current_time-time_epoch), DP, data[0], DP, data[1], \
     DP, data[2], DP, data[3], DP, data[4]);
     if(serial_print) {
         Serial.print(output_string);
@@ -44,7 +46,7 @@ void setup() {
 
     current_storage_used = list_files("/data");
 
-    const char csv_header[] = "Line_No.,Corr_DP(Pa),Corr_Airspeed(m/s),DP(Pa),Airspeed(m/s),Temperature(C)\n";
+    const char csv_header[] = "Line_No.,Time(us),Corr_DP(Pa),Corr_Airspeed(m/s),DP(Pa),Airspeed(m/s),Temperature(C)\n";
     int current_datafile_number;
     int next_datafile_number;
     const char current_datafile_number_str[] = "000";
