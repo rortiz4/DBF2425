@@ -24,6 +24,7 @@ struct GPS_Data {
     float longitude;
     float gnd_speed; // knots
     float altitude;
+    float heading;
     uint8_t hours;
     uint8_t minutes;
     uint8_t seconds;

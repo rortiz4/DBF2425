@@ -17,8 +17,6 @@
 #define NMEA_BUFFER_SIZE 255
 #define INIT_DELAY 100
 
-#define AIR_DENSITY 1.225 // kg/m^3 (for airspeed calculation)
-
 /* Instantiate sensor classes and types */
 // BNO085
 Adafruit_BNO08x bno085(-1);
@@ -226,19 +224,12 @@ void read_ms4525do(void* pvParameters) {
         // Must initialize a vector like so: float output_vector[5]; to store data.
         float raw_diff_pressure = ms4525do.pres_pa();
         float temp_C = ms4525do.die_temp_c();
+        float raw_airspeed = ms4525do.aspeed();
 
         xSemaphoreGive(I2C_MUTEX);
 
-        float raw_airspeed;
-        if (raw_diff_pressure < 0) {
-            raw_airspeed = -sqrt(-(2*raw_diff_pressure)/AIR_DENSITY); // in m/s from Bernoulli's Equation
-        }
-        else {
-            raw_airspeed = sqrt((2*raw_diff_pressure)/AIR_DENSITY);
-        }
-
         float corr_diff_pressure = raw_diff_pressure; // Temporarily until accurately calibrated
-        float corr_airspeed = raw_airspeed; // Temporarily until accurately calibrated
+        float corr_airspeed = raw_airspeed + 9.441615431; // Temporarily until accurately calibrated
 
         new_airspeed_data.diff_pressure[0] = raw_diff_pressure;
         new_airspeed_data.diff_pressure[1] = corr_diff_pressure;
@@ -255,35 +246,41 @@ void read_ms4525do(void* pvParameters) {
 void read_gps(void* pvParameters) {
     // Initialize GPS_Data struct
     GPS_Data new_gps_data;
+    bool first_fix = false;
     new_gps_data.sensor_id = 2;
     while(true) {
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
         myGNSS.checkUblox();
         // Fetch GPS data character by character
         if(!nmea.isValid()) {
-            Serial.println("Waiting for GPS Fix...");
             xSemaphoreGive(I2C_MUTEX);
-            /*
-            new_gps_data.latitude = 0;
-            new_gps_data.longitude = 0;
-            new_gps_data.gnd_speed = 0;
-            new_gps_data.altitude = 0;
-            new_gps_data.hours = 0;
-            new_gps_data.minutes = 0;
-            new_gps_data.seconds = 0;
-            new_gps_data.hundredths = 0;
-            new_gps_data.satellites = 0;
-
-            xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
-            xSemaphoreGive(gps_done);
-            vTaskSuspend(NULL);
-            */
+            if (!first_fix) {
+                new_gps_data.latitude = 0;
+                new_gps_data.longitude = 0;
+                new_gps_data.heading = 0;
+                new_gps_data.gnd_speed = 0;
+                new_gps_data.altitude = 0;
+                new_gps_data.hours = 0;
+                new_gps_data.minutes = 0;
+                new_gps_data.seconds = 0;
+                new_gps_data.hundredths = 0;
+                new_gps_data.satellites = 0;
+                xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
+                xSemaphoreGive(gps_done);
+                vTaskSuspend(NULL);
+            }
+            //xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
+            //xSemaphoreGive(gps_done);
+            //vTaskSuspend(NULL);
             continue;
         }
+        first_fix = true;
         // Store NMEA parsed data (with consistent type-casting)
         long alt_long;
+        long heading_long;
         float latitude_mdeg = (float)nmea.getLatitude();
         float longitude_mdeg = (float)nmea.getLongitude();
+        float heading = (float)nmea.getCourse();
         float gnd_speed = (float)nmea.getSpeed();
         bool altitude = nmea.getAltitude(alt_long);
         float alt = (float)alt_long;
@@ -300,10 +297,12 @@ void read_gps(void* pvParameters) {
         longitude_mdeg = longitude_mdeg / 1000000;
         gnd_speed = gnd_speed * (1.68781 / 1000); // Knots to ft/s
         alt = alt / 1000;
+        heading = heading / 1000;
 
         // Store Data in struct, then send to queue
         new_gps_data.latitude = latitude_mdeg;
         new_gps_data.longitude = longitude_mdeg;
+        new_gps_data.heading = heading;
         new_gps_data.gnd_speed = gnd_speed;
         new_gps_data.altitude = alt;
         new_gps_data.hours = hours;

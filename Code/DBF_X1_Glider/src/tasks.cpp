@@ -10,7 +10,7 @@
 TaskHandle_t read_imu_task = NULL;
 TaskHandle_t read_pitot_task = NULL;
 TaskHandle_t read_gps_task = NULL;
-TaskHandle_t log_data_task = NULL;
+TaskHandle_t log_data_task = NULL; // Currently Unused handle
 
 void init_tasks() {
     // 4 Tasks in total: read each of the three sensors and log the data

@@ -81,14 +81,24 @@ bool Ms4525do::Read() {
   }
   status_ = (buf_[0] >> 6) & 0x03;
   pres_cnts_ = static_cast<uint16_t>(buf_[0] & 0x3F) << 8 | buf_[1];
-  //Serial.println(pres_cnts_);
   temp_cnts_ = static_cast<uint16_t>(buf_[2]) << 3 | buf_[3] & 0xE0 >> 5;
+
   pres_psi_ = (static_cast<float>(pres_cnts_) - c_ * P_CNT_) *
               ((p_max_ - p_min_) / (d_ * P_CNT_)) + p_min_;
+
   temp_ = static_cast<float>(temp_cnts_) * (T_MAX_ - T_MIN_) / T_CNT_ + T_MIN_;
+
   if (temp_ > T_MAX_) {return false;}
   if (static_cast<Status>(status_) != STATUS_GOOD) {return false;}
-  pres_pa_ = pres_psi_ * 0.45359237f * 9.80665f / 0.0254f / 0.0254f;
+
+  pres_pa_ = pres_psi_ * pascal_per_psi;
+
+  if (pres_cnts_ < 8192){
+    aspeed_ = -sqrt(-2*pres_pa_/rho);
+  }
+  else{
+    aspeed_ = sqrt(2*pres_pa_/rho);
+  }
   temp_c_ = temp_;
   return true;
 }

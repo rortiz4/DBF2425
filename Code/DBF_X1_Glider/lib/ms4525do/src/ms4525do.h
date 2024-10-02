@@ -55,6 +55,9 @@ class Ms4525do {
   bool Read();
   inline float pres_pa() const {return pres_pa_;}
   inline float die_temp_c() const {return temp_c_;}
+  inline float pres_cnts() const {return pres_cnts_;}
+  inline float pres_psi() const {return pres_psi_;}
+  inline float aspeed() const {return aspeed_;}
   inline Status status() const {return static_cast<Status>(status_);}
 
  private:
@@ -69,6 +72,13 @@ class Ms4525do {
   static constexpr int16_t T_CNT_ = 2047;
   static constexpr float T_MAX_ = 150;
   static constexpr float T_MIN_ = -50;
+  static constexpr float rho = 1.168826;
+  static constexpr float pascal_per_psi = 6894.7572931783; //Used to convert psi to pascal
+  /* 
+  At an altitude of 223 meters (Notre Dame Altitude), the pressure at sea level being 101325 Pa, and assuming 70 F temperature, the air pressure 
+  in South Bend is 98729.06 Pa. https://www.mide.com/air-pressure-at-altitude-calculator
+  Assuming dry air in these conditions would mean an air density of 1.168826 kg/m^3. https://www.omnicalculator.com/physics/air-density 
+  */
   /* Data */
   uint8_t buf_[4];
   uint8_t bytes_rx_;
@@ -76,6 +86,7 @@ class Ms4525do {
   uint16_t pres_cnts_, temp_cnts_;
   float pres_psi_, temp_;
   float pres_pa_, temp_c_;
+  float aspeed_;
 };
 
 }  // namespace bfs
