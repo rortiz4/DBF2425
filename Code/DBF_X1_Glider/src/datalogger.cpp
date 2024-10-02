@@ -52,24 +52,28 @@ void init_SD() {
             datafile = SD.open(filename, FILE_WRITE);
         }
     }
-    Serial.print("Writing .csv header...");
+    Serial.println("Writing .csv header:");
     // Write Header to file
-    datafile.printf("line_Number,ESP_Time,ID0,Acc_x,Acc_y,Acc_z,gyro_x,gyro_y,gyro_z,mag_x,mag_y,mag_z,"); // Adjust later.
-    datafile.printf("rot_re,rot_i,rot_j,rot_k,ID1,raw_press,corr_press,raw_airspeed,corr_airspeed,temp,");
-    datafile.printf("ID2,latitude,longitude,gnd_speed,altitude,hours,mins,secs,hundredths,satellites\n");
+    const char csv_header[] =   "line_Number,ESP_Time,ID0,Acc_x,Acc_y,Acc_z,gyro_x,gyro_y,gyro_z,mag_x,mag_y,mag_z,"
+                                "rot_re,rot_i,rot_j,rot_k,ID1,raw_press,corr_press,raw_airspeed,corr_airspeed,temp,"
+                                "ID2,latitude,longitude,gnd_speed,altitude,hours,mins,secs,hundredths,satellites\n";
+    Serial.print(csv_header);
+    Serial.flush(); 
+    datafile.print(csv_header);
     datafile.flush(); 
-    Serial.println("DONE!");
+    Serial.println(".csv Header Writing DONE!");
 }
 
 void log_data(void* pvParameters) {
     pinMode(BUILTIN_LED_PIN, OUTPUT);
-    digitalWrite(BUILTIN_LED_PIN, LOW);
-    bool led_on = false;
-    unsigned long line_num = 1; // These are only initialized once
     IMU_Data imu;
     Airspeed_Data pitot;
     GPS_Data gps;
+    bool led_on = false;
+    unsigned long line_num = 1; // These are only initialized once
+    Serial.flush();
     while(true) {
+        digitalWrite(BUILTIN_LED_PIN, LOW);
         /* From queues.h (just for reference)
             // Defining containers for data
         struct IMU_Data {
@@ -182,6 +186,5 @@ void log_data(void* pvParameters) {
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
     }
-
 }
 

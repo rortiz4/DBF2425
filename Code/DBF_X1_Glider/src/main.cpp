@@ -6,6 +6,7 @@
 #include "datalogger.h"
 
 void setup() {
+    delay(3000);
     init_low_level_hw();
     init_queues();
     init_semaphores();

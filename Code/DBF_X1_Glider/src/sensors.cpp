@@ -12,9 +12,9 @@
 
 #define SERIAL_MONITOR_BAUDRATE 115200 // bits/sec
 #define STARTUP_DELAY 5000 // x2
-#define I2C_BUS_SPEED 100000 // 100kHz Default
-#define GPS_SAMPLE_RATE 5 // Hz
-#define NMEA_BUFFER_SIZE 100
+#define I2C_BUS_SPEED 200000 // 100kHz Default
+#define GPS_SAMPLE_RATE 10 // Hz (10Hz max)
+#define NMEA_BUFFER_SIZE 255
 #define INIT_DELAY 100
 
 #define AIR_DENSITY 1.225 // kg/m^3 (for airspeed calculation)
@@ -27,6 +27,9 @@ sh2_SensorValue_t bno085_value;
 bfs::Ms4525do ms4525do;
 // GPS
 SFE_UBLOX_GNSS myGNSS;
+// Create buffer variables for NMEA Sentence Parsing
+char nmeaBuffer[NMEA_BUFFER_SIZE];
+MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
 // Initialize Serial and I2C hardware
 void init_low_level_hw() {
@@ -253,15 +256,14 @@ void read_gps(void* pvParameters) {
     // Initialize GPS_Data struct
     GPS_Data new_gps_data;
     new_gps_data.sensor_id = 2;
-    // Create buffer variables for NMEA Sentence Parsing
-    char nmeaBuffer[NMEA_BUFFER_SIZE];
-    MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
     while(true) {
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
         myGNSS.checkUblox();
+        // Fetch GPS data character by character
         if(!nmea.isValid()) {
+            Serial.println("Waiting for GPS Fix...");
             xSemaphoreGive(I2C_MUTEX);
-            // continue;
+            /*
             new_gps_data.latitude = 0;
             new_gps_data.longitude = 0;
             new_gps_data.gnd_speed = 0;
@@ -275,6 +277,7 @@ void read_gps(void* pvParameters) {
             xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
             xSemaphoreGive(gps_done);
             vTaskSuspend(NULL);
+            */
             continue;
         }
         // Store NMEA parsed data (with consistent type-casting)
@@ -314,5 +317,16 @@ void read_gps(void* pvParameters) {
         vTaskSuspend(NULL);
     }
     
+}
+
+//This function gets called from the SparkFun u-blox Arduino Library
+//As each NMEA character comes in you can specify what to do with it
+//Useful for passing to other libraries like tinyGPS, MicroNMEA, or even
+//a buffer, radio, etc.
+void SFE_UBLOX_GNSS::processNMEA(char incoming)
+{
+  //Take the incoming char from the u-blox I2C port and pass it on to the MicroNMEA lib
+  //for sentence cracking
+  nmea.process(incoming);
 }
 
