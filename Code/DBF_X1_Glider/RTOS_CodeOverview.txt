@@ -1,0 +1,58 @@
+RTOS Features Implemented
+
+(Sensors):
+- IMU
+- Differential Pressure (Pitot Tube/Airspeed)
+- GPS
+
+CPU Usage:
+- CPU0: All sensor reading tasks are on this since they need the I2C Mutex anyway, so only one task runs at a time (no parallel benefit)
+- CPU1: Data Logging task since after receiving queue data, it can immediately start saving data while the sensors are collecting the next dataset
+
+Tasks (4, each with 4096 bytes stack size [lower = faster sampling]):
+- Initialize All Sensors... Don't need RTOS for this
+- Initialize SD Card / Data Logging... Don't need RTOS for this
+- Read IMU (CPU0)
+- Read Airspeed Sensor (CPU0)
+- Read GPS Data (CPU0)
+- Log Data to CSV File (CPU1)
+
+Queues (3):
+- IMU Data Queue Send => Logging Task Queue Receive
+- Airspeed Data Queue Send => Logging Task Queue Receive
+- GPS Data Queue Send => Logging Task Queue Receive
+
+Timers: None (Could make one for built-in LED just for fun)
+
+Task Control (Suspend/Resume):
+- SUSPEND TASK: IMU Read once queue is filled with fresh data
+- SUSPEND TASK: Airspeed Read once queue is filled with fresh data
+- SUSPEND TASK: GPS Read once queue is filled with fresh data
+- RESUME TASKS ABOVE: As soon as each queue is emptied by logging task => Each Sensor Reading Task (only log after all sensors have been polled once)
+
+Mutex(1) + Binary Semaphores(3):
+- I2C Bus MUTEX: Ensures only one sensor accesses the I2C bus at any given time.
+Each sensor task attempts to take it once in the infinite loop
+While waiting for data, each sensor task gives back the semaphore in a sub-infinite (while !data) loop
+If there is data, the semaphore is taken by the sensor that got data
+After pulling the data, the semaphore is given back (and task suspends).
+- IMU Done Reading Semaphore => Signals Logging Task that queue is filled with fresh data
+- GPS Done Reading Semaphore => Signals Logging Task that queue is filled with fresh data
+- Pitot Tube Sensor Done Reading Semaphore => Signals Logging Task that queue is filled with fresh data
+
+Files:
+- main.cpp: self-explanatory starting point for program (as small as possible but #includes a lot)
+- sensors.h+sensors.cpp: Code for initializing Serial, I2C, and all sensors (not with RTOS) + Task Functions to read each sensor individually
+- datalogger.h+datalogger.cpp: Code for initializing the SD Card and logging (.csv) data to Serial Monitor and/or SD Card file.
+- Tasks, Queues, and Semaphores + their associated handles, declarations, and definitions are stored in tasks.h/tasks.cpp, queues.h/queues.cpp, and semaphores.h/semaphores.cpp
+
+(Outputs):
+- SD Card .csv file writing
+- Serial Monitor Printing
+- LED Toggle after every .csv file entry.
+
+Sample Rate Estimates:
+- IMU Alone: 15Hz
+- Airspeed Sensor Alone: 145Hz
+- All Sensors Together: 10Hz originally (excluding GPS)
+- After Optimizations (lower stack size, using dual core, etc.): 15.34Hz rate (excluding GPS)
