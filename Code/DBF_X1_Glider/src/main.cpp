@@ -5,13 +5,16 @@
 #include "sensors.h"
 #include "datalogger.h"
 
+#define SERIAL_LOG true // Log Data to Serial
+#define SD_LOG false // Log Data to SD Card file
+
 void setup() {
     delay(3000);
     init_low_level_hw();
     init_queues();
     init_semaphores();
-    // init_SD();
     init_all_sensors();
+    init_SD(SERIAL_LOG, SD_LOG);
     init_tasks();
     Serial.println("All Tasks Started Successfully. RTOS Task Scheduler Running!\n");
     /*
