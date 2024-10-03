@@ -1,5 +1,5 @@
-RTOS Features Implemented
-
+Datafile Size: 1.52MB/5min = 304kB/min = 5.1kbps
+RTOS Features Implemented:
 (Sensors):
 - IMU
 - Differential Pressure (Pitot Tube/Airspeed)
