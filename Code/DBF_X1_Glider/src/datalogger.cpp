@@ -37,25 +37,25 @@ void init_SD(bool serial_log, bool SD_log) {
     Serial.println("DONE!");
     Serial.println("Searching for next available filename");
     // Get next filenumber for filename 
-    sprintf(filename, "data%03d.csv", file_counter); // Create the filename with the counter
+    sprintf(filename, "/data%03d.csv", file_counter); // Create the filename with the counter
     while(SD.exists(filename)) { 
         file_counter++;
         if (file_counter == 1000) {
             file_counter = FILE_COUNT_START;
-            Serial.println("Overwriting file data000.csv... 1000 files in storage. Please DELETE SOME!!!");
-            sprintf(filename, "data%03d.csv", file_counter); // Create the filename with the counter
+            Serial.println("Overwriting file /data000.csv... 1000 files in storage. Please DELETE SOME!!!");
+            sprintf(filename, "/data%03d.csv", file_counter); // Create the filename with the counter
             break;
         }
-        else sprintf(filename, "data%03u.csv", file_counter); // Create the filename with the counter
+        else sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
     }
 
     datafile = SD.open(filename, FILE_WRITE);
     // Open File
     if (datafile) {
-        Serial.printf("Writing to file: data%03u.csv\n", file_counter);
+        Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
     }
     else {
-        Serial.printf("Failed to Open File: data%03u.csv for writing!\n", file_counter);
+        Serial.printf("Failed to Open File: /data%03u.csv for writing!\n", file_counter);
         while(!datafile) {
             Serial.println("Retrying file open...");
             delay(INIT_DELAY_SD);
@@ -126,6 +126,7 @@ void log_data(void* pvParameters) {
         xSemaphoreTake(gps_done, portMAX_DELAY);
         almost_current_time = (float)((micros() - start_time)/1000000.0); // Convert us (micros) to s
         xQueueReceive(GPS_Queue, &gps, portMAX_DELAY);
+        vTaskResume(read_gps_task);
 
 // If GPS regains fix after a long time (more than 1s), take IMU/Airspeed readings twice
         if ((almost_current_time - prev_time) > GPS_FIX_DELAY_THRESHOLD) {
@@ -134,25 +135,26 @@ void log_data(void* pvParameters) {
             vTaskResume(read_imu_task);
             xSemaphoreTake(imu_done, portMAX_DELAY);
             xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
+            vTaskResume(read_imu_task);
             
             xSemaphoreTake(airspeed_done, portMAX_DELAY);
             xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
             vTaskResume(read_pitot_task);
             xSemaphoreTake(airspeed_done, portMAX_DELAY);
             xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
+            vTaskResume(read_pitot_task);
         }
         else {
             xSemaphoreTake(imu_done, portMAX_DELAY);
             xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
+            vTaskResume(read_imu_task);
 
             xSemaphoreTake(airspeed_done, portMAX_DELAY);
             xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
+            vTaskResume(read_pitot_task);
         }
 
         current_time = (float)((micros() - start_time)/1000000.0);
-        vTaskResume(read_gps_task);
-        vTaskResume(read_imu_task);
-        vTaskResume(read_pitot_task);
 
         // Log Data to datafile
         if (log_to_SD) {
