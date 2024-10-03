@@ -41,9 +41,9 @@ void init_SD(bool serial_log, bool SD_log) {
     sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
     while(SD.exists(filename)) { 
         file_counter++;
-        if (file_counter == 1000) {
+        if (file_counter >= 1000) {
             file_counter = FILE_COUNT_START;
-            Serial.println("Overwriting file /data000.csv... 1000 files in storage. Please DELETE SOME!!!");
+            Serial.println("Overwriting file /data000.csv... 1000+ files in storage. Please DELETE SOME!!!");
             sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
             break;
         }
