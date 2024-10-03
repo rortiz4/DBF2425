@@ -178,7 +178,7 @@ void delete_dir(const char* dir_path) {
     root.close();
 
     // Once all contents are deleted, remove the empty directory (exception: '/' root directory which will always remain)
-    if (dir_path != "/") {
+    if (strcmp(dir_path, "/")) {
         if (LittleFS.rmdir(dir_path)) {
             Serial.printf("Deleted directory: \"%s\"\n", dir_path);
         } else {
