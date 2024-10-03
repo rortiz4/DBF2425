@@ -16,7 +16,7 @@ void setup() {
     init_all_sensors();
     init_SD(SERIAL_LOG, SD_LOG);
     init_tasks();
-    Serial.println("All Tasks Started Successfully. RTOS Task Scheduler Running!\n");
+    Serial.println("All Systems ONLINE! All Tasks Started Successfully! RTOS Task Scheduler RUNNING!\n");
     /*
     Sample Rate Estimates:
     - IMU Alone: 15Hz

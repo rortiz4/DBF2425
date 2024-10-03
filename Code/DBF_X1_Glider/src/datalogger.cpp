@@ -159,22 +159,32 @@ void log_data(void* pvParameters) {
         // Log Data to datafile
         if (log_to_SD) {
             // Line Num + ESP Time + IMU Data
-            datafile.printf("%lu,%lu,%u,%.*f,%.*f,%.*f,%.*f,", line_num, micros()-start_time, imu.sensor_id, \
+            datafile.printf("%lu,%.*f,%u,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,", line_num, 6, current_time, imu.sensor_id, \
             DP_DATA, imu.acceleration[0], \
+            DP_DATA, imu.acceleration[1], \
+            DP_DATA, imu.acceleration[2], \
             DP_DATA, imu.gyro[0], \
+            DP_DATA, imu.gyro[1], \
+            DP_DATA, imu.gyro[2], \
             DP_DATA, imu.magnetic[0], \
-            DP_DATA, imu.rotation[0]);
+            DP_DATA, imu.magnetic[1], \
+            DP_DATA, imu.magnetic[2], \
+            DP_DATA, imu.rotation[0], \
+            DP_DATA, imu.rotation[1], \
+            DP_DATA, imu.rotation[2], \
+            DP_DATA, imu.rotation[3]);
 
             // Airspeed/Pitot Tube Data
-            datafile.printf("%u,%.*f,%.*f,%.*f,", pitot.sensor_id, \
+            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
             DP_DATA, pitot.diff_pressure[0], \
+            DP_DATA, pitot.diff_pressure[1], \
             DP_DATA, pitot.airspeed[0], \
+            DP_DATA, pitot.airspeed[1], \
             DP_DATA, pitot.temperature);
-
             // GPS Data
-            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u\n", gps.sensor_id, \
+            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u\n", gps.sensor_id, \
             DP_GPS, gps.latitude, \
-            DP_GPS, gps.longitude,
+            DP_GPS, gps.longitude, \
             DP_GPS, gps.heading, \
             DP_DATA, gps.gnd_speed, \
             DP_GPS, gps.altitude, \
