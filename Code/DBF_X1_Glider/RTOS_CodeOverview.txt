@@ -42,7 +42,7 @@ After pulling the data, the semaphore is given back (and task suspends).
 
 Files:
 - main.cpp: self-explanatory starting point for program (as small as possible but #includes a lot)
-- sensors.h+sensors.cpp: Code for initializing Serial, I2C, and all sensors (not with RTOS) + Task Functions to read each sensor individually
+- sensors.h+sensors.cpp: Code for initializing Serial, I2C, and all sensors (not with RTOS) + Task Functions to read each sensor individually + structs for each sensor's data/types
 - datalogger.h+datalogger.cpp: Code for initializing the SD Card and logging (.csv) data to Serial Monitor and/or SD Card file.
 - Tasks, Queues, and Semaphores + their associated handles, declarations, and definitions are stored in tasks.h/tasks.cpp, queues.h/queues.cpp, and semaphores.h/semaphores.cpp
 
