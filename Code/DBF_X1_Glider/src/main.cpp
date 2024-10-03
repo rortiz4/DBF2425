@@ -14,6 +14,7 @@ void setup() {
     init_queues();
     init_semaphores();
     init_all_sensors();
+    // FORMAT SD CARD TO FAT32 BEFORE FIRST USE
     init_SD(SERIAL_LOG, SD_LOG);
     init_tasks();
     Serial.println("All Systems ONLINE! All Tasks Started Successfully! RTOS Task Scheduler RUNNING!\n");

@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include "datalogger.h"
+#include "sensors.h"
 #include "tasks.h"
 #include "queues.h"
 #include "semaphores.h"
@@ -63,8 +64,8 @@ void init_SD(bool serial_log, bool SD_log) {
         }
     }
     // Write Header to file
-    const char csv_header[] =   "line_Number,ESP_Time,ID0,Acc_x,Acc_y,Acc_z,gyro_x,gyro_y,gyro_z,mag_x,mag_y,mag_z,"
-                                "rot_re,rot_i,rot_j,rot_k,ID1,raw_press,corr_press,raw_airspeed,corr_airspeed,temp,"
+    const char csv_header[] =   "line_Number,ESP_Time,ID0,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,gyro_x,gyro_y,gyro_z,mag_x,mag_y,mag_z,"
+                                "grav_x,grav_y,grav_z,rot_re,rot_i,rot_j,rot_k,ID1,raw_press,corr_press,raw_airspeed,corr_airspeed,temp,"
                                 "ID2,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites\n";
 
     Serial.println("Writing .csv header:");
@@ -87,37 +88,8 @@ void log_data(void* pvParameters) {
     unsigned long line_num = LINE_NUM_START; // These are only initialized once
     Serial.flush();
     while(true) {
-        /* From queues.h (just for reference)
-            // Defining containers for data
-        struct IMU_Data {
-            unsigned int sensor_id;
-            float acceleration[3]; // x,y,z
-            float gyro[3]; // x,y,z
-            float magnetic[3]; // x,y,z
-            float rotation[4]; // Quaternion - real, i, j, k
-        };
+        // See queues.h for definition of structs
 
-        struct Airspeed_Data {
-            unsigned int sensor_id;
-            float diff_pressure[2]; // raw, corrected
-            float airspeed[2]; // raw, corrected
-            float temperature;
-        };
-
-        struct GPS_Data {
-            unsigned int sensor_id;
-            float latitude;
-            float longitude;
-            float heading;
-            float gnd_speed; // knots
-            float altitude;
-            uint8_t hours;
-            uint8_t minutes;
-            uint8_t seconds;
-            uint8_t hundredths;
-            uint8_t satellites;
-        };
-        */
         static unsigned long start_time = micros();
         float prev_time = 0;
         float almost_current_time = 0;
@@ -159,16 +131,22 @@ void log_data(void* pvParameters) {
         // Log Data to datafile
         if (log_to_SD) {
             // Line Num + ESP Time + IMU Data
-            datafile.printf("%lu,%.*f,%u,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,", line_num, 6, current_time, imu.sensor_id, \
-            DP_DATA, imu.acceleration[0], \
-            DP_DATA, imu.acceleration[1], \
-            DP_DATA, imu.acceleration[2], \
+            datafile.printf("%lu,%.*f,%u,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,", line_num, 6, current_time, imu.sensor_id, \
+            DP_DATA, imu.lin_accel[0], \
+            DP_DATA, imu.lin_accel[1], \
+            DP_DATA, imu.lin_accel[2], \
+            DP_DATA, imu.euler[0], \
+            DP_DATA, imu.euler[1], \
+            DP_DATA, imu.euler[2], \
             DP_DATA, imu.gyro[0], \
             DP_DATA, imu.gyro[1], \
             DP_DATA, imu.gyro[2], \
             DP_DATA, imu.magnetic[0], \
             DP_DATA, imu.magnetic[1], \
             DP_DATA, imu.magnetic[2], \
+            DP_DATA, imu.gravity[0], \
+            DP_DATA, imu.gravity[1], \
+            DP_DATA, imu.gravity[2], \
             DP_DATA, imu.rotation[0], \
             DP_DATA, imu.rotation[1], \
             DP_DATA, imu.rotation[2], \
@@ -195,16 +173,22 @@ void log_data(void* pvParameters) {
         
         if (log_to_serial) {
             // Line Num + ESP Time + IMU Data
-            Serial.printf("%lu,%.*f,%u,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,", line_num, 6, current_time, imu.sensor_id, \
-            DP_DATA, imu.acceleration[0], \
-            DP_DATA, imu.acceleration[1], \
-            DP_DATA, imu.acceleration[2], \
+            Serial.printf("%lu,%.*f,%u,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,%.*f,", line_num, 6, current_time, imu.sensor_id, \
+            DP_DATA, imu.lin_accel[0], \
+            DP_DATA, imu.lin_accel[1], \
+            DP_DATA, imu.lin_accel[2], \
+            DP_DATA, imu.euler[0], \
+            DP_DATA, imu.euler[1], \
+            DP_DATA, imu.euler[2], \
             DP_DATA, imu.gyro[0], \
             DP_DATA, imu.gyro[1], \
             DP_DATA, imu.gyro[2], \
             DP_DATA, imu.magnetic[0], \
             DP_DATA, imu.magnetic[1], \
             DP_DATA, imu.magnetic[2], \
+            DP_DATA, imu.gravity[0], \
+            DP_DATA, imu.gravity[1], \
+            DP_DATA, imu.gravity[2], \
             DP_DATA, imu.rotation[0], \
             DP_DATA, imu.rotation[1], \
             DP_DATA, imu.rotation[2], \

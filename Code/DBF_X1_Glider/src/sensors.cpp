@@ -1,5 +1,6 @@
 // This file contains all sensor related code functions to initialize and read from sensors.
 #include <Arduino.h>
+#include "sensors.h"
 #include "queues.h"
 #include "semaphores.h"
 #include <Wire.h>
@@ -61,8 +62,12 @@ bool init_bno085() {
         Serial.println("\nCould not enable rotation vector");
         return false;
     }
-    if (!bno085.enableReport(SH2_ACCELEROMETER)) {
-        Serial.println("\nCould not enable accelerometer");
+    if (!bno085.enableReport(SH2_LINEAR_ACCELERATION)) {
+        Serial.println("\nCould not enable accelerometer (linear acceleration)");
+        return false;
+    }
+    if (!bno085.enableReport(SH2_GRAVITY)) {
+        Serial.println("\nCould not enable gravity vector output");
         return false;
     }
     if (!bno085.enableReport(SH2_GYROSCOPE_CALIBRATED)) {
@@ -126,6 +131,24 @@ void init_all_sensors() {
     Serial.println("All Sensors Initialized Successfully!");
 }
 
+void quat2eul (float re, float i, float j, float k, float* euler_angles, bool degrees=true) {
+    float sqre = sq(re);
+    float sqi = sq(i);
+    float sqj = sq(j);
+    float sqk = sq(k);
+    // Note: re/real part = w; i,j,k are x,y,z in w+xi+yj+zk quaternion components
+    if (degrees) {
+        euler_angles[0] = RAD_TO_DEG * (asin(-2.0 * (i * k - j * re) / (sqi + sqj + sqk + sqre))); // Pitch
+        euler_angles[1] = RAD_TO_DEG * (atan2(2.0 * (j * k + i * re), (-sqi - sqj + sqk + sqre))); // Roll
+        euler_angles[2] = RAD_TO_DEG * (atan2(2.0 * (i * j + k * re), (sqi - sqj - sqk + sqre))); // Yaw
+    }
+    else {
+        euler_angles[0] = asin(-2.0 * (i * k - j * re) / (sqi + sqj + sqk + sqre)); // Pitch
+        euler_angles[1] = atan2(2.0 * (j * k + i * re), (-sqi - sqj + sqk + sqre)); // Roll
+        euler_angles[2] = atan2(2.0 * (i * j + k * re), (sqi - sqj - sqk + sqre)); // Yaw
+    }
+
+}
 
 /* Sensor Reading Functions */
 // IMU
@@ -136,11 +159,12 @@ void read_bno085(void* pvParameters) {
     while(true) {
         bool rot_read = false;
         bool acc_read = false;
+        bool grav_read = false;
         bool gyro_read = false;
         bool mag_read = false;
         int read_count = 0;
 
-        while(read_count < 4) {
+        while(read_count < 5) {
             xSemaphoreTake(I2C_MUTEX, portMAX_DELAY); // This is blocking. xSemaphoreGive() is not
             // Try to get sensor data
             if (!bno085.getSensorEvent(&bno085_value)) {
@@ -152,25 +176,44 @@ void read_bno085(void* pvParameters) {
                 case SH2_ROTATION_VECTOR:
                     // Only read data from a particular sensor once in the while loop
                     if(!rot_read) {
-                        new_imu_data.rotation[0] = bno085_value.un.rotationVector.real;
-                        new_imu_data.rotation[1] = bno085_value.un.rotationVector.i;
-                        new_imu_data.rotation[2] = bno085_value.un.rotationVector.j;
-                        new_imu_data.rotation[3] = bno085_value.un.rotationVector.k;
+                        new_imu_data.rotation[0] = bno085_value.un.rotationVector.real; // w
+                        new_imu_data.rotation[1] = bno085_value.un.rotationVector.i; // x
+                        new_imu_data.rotation[2] = bno085_value.un.rotationVector.j; // y
+                        new_imu_data.rotation[3] = bno085_value.un.rotationVector.k; // z
                         xSemaphoreGive(I2C_MUTEX);
+
+                        float euler_vector[3] = {0.0,0.0,0.0};
+                        quat2eul(new_imu_data.rotation[0],new_imu_data.rotation[1],new_imu_data.rotation[2],new_imu_data.rotation[3],euler_vector,true);
+                        new_imu_data.euler[0] = euler_vector[0]; // Pitch
+                        new_imu_data.euler[1] = euler_vector[1]; // Roll
+                        new_imu_data.euler[2] = euler_vector[2]; // Yaw
+
                         read_count++;
                         rot_read = true;
                     }
                     else xSemaphoreGive(I2C_MUTEX);
                     break;
-                case SH2_ACCELEROMETER:
+                case SH2_LINEAR_ACCELERATION:
                     // Only read data from a particular sensor once in the while loop
                     if(!acc_read) {
-                        new_imu_data.acceleration[0] = bno085_value.un.accelerometer.x; // m/s^2
-                        new_imu_data.acceleration[1] = bno085_value.un.accelerometer.y; // m/s^2
-                        new_imu_data.acceleration[2] = bno085_value.un.accelerometer.z; // m/s^2
+                        new_imu_data.lin_accel[0] = bno085_value.un.linearAcceleration.x; // m/s^2
+                        new_imu_data.lin_accel[1] = bno085_value.un.linearAcceleration.y; // m/s^2
+                        new_imu_data.lin_accel[2] = bno085_value.un.linearAcceleration.z; // m/s^2
                         xSemaphoreGive(I2C_MUTEX);
                         read_count++;
                         acc_read = true;
+                    }
+                    else xSemaphoreGive(I2C_MUTEX);
+                    break;
+                case SH2_GRAVITY:
+                    // Only read data from a particular sensor once in the while loop
+                    if(!grav_read) {
+                        new_imu_data.gravity[0] = bno085_value.un.gravity.x; // m/s^2
+                        new_imu_data.gravity[1] = bno085_value.un.gravity.y; // m/s^2
+                        new_imu_data.gravity[2] = bno085_value.un.gravity.z; // m/s^2
+                        xSemaphoreGive(I2C_MUTEX);
+                        read_count++;
+                        grav_read = true;
                     }
                     else xSemaphoreGive(I2C_MUTEX);
                     break;

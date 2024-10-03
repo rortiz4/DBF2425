@@ -1,4 +1,5 @@
 #include "queues.h"
+#include "sensors.h"
 
 // Declare queues (allocate space) for externs in queues.h
 QueueHandle_t IMU_Queue = NULL;
