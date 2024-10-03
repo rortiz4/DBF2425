@@ -220,9 +220,9 @@ void read_bno085(void* pvParameters) {
                 case SH2_GYROSCOPE_CALIBRATED:
                     // Only read data from a particular sensor once in the while loop
                     if(!gyro_read) {
-                        new_imu_data.gyro[0] = bno085_value.un.gyroscope.x; // rad/s
-                        new_imu_data.gyro[1] = bno085_value.un.gyroscope.y; // rad/s
-                        new_imu_data.gyro[2] = bno085_value.un.gyroscope.z; // rad/s
+                        new_imu_data.gyro[0] = RAD_TO_DEG * bno085_value.un.gyroscope.x; // rad/s -> deg/s
+                        new_imu_data.gyro[1] = RAD_TO_DEG * bno085_value.un.gyroscope.y; // rad/s -> deg/s
+                        new_imu_data.gyro[2] = RAD_TO_DEG * bno085_value.un.gyroscope.z; // rad/s => deg/s
                         xSemaphoreGive(I2C_MUTEX);
                         read_count++;
                         gyro_read = true;
