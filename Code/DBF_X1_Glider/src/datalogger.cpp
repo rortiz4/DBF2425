@@ -64,8 +64,8 @@ void init_SD(bool serial_log, bool SD_log) {
         }
     }
     // Write Header to file
-    const char csv_header[] =   "Line_Num,ESP32_Time,ID0,linAcc_x,linAcc_y,linAcc_z,Pitch_deg,Roll_deg,Yaw_deg,gyro_deg_x,gyro_deg_y,gyro_deg_z,mag_x,mag_y,mag_z,"
-                                "grav_x,grav_y,grav_z,quat_re,quat_i,quat_j,quat_k,ID1,raw_press_Pa,corr_press_Pa,raw_airspeed,corr_airspeed,temp_C,"
+    const char csv_header[] =   "Line_Num,ESP32_Time,ID0,LinAcc_x,LinAcc_y,LinAcc_z,Pitch_deg,Roll_deg,Yaw_deg,Gyro_deg_x,Gyro_deg_y,Gyro_deg_z,Mag_uT_x,Mag_uT_y,Mag_uT_z,"
+                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1,RawPress_Pa,CorrPressPa,RawAirspeed,CorrAirspeed,temp_C,"
                                 "ID2,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites\n";
 
     Serial.println("Writing .csv header:");
