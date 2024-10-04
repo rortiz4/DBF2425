@@ -102,6 +102,7 @@ void log_data(void* pvParameters) {
 
 // If GPS regains fix after a long time (more than 1s), take IMU/Airspeed readings twice
         if ((almost_current_time - prev_time) > GPS_FIX_DELAY_THRESHOLD) {
+            Serial.printf("GPS fix lost, then regained after %f seconds!\n", (almost_current_time - prev_time));
             xSemaphoreTake(imu_done, portMAX_DELAY);
             xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
             vTaskResume(read_imu_task);
@@ -205,9 +206,9 @@ void log_data(void* pvParameters) {
             Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u\n", gps.sensor_id, \
             DP_GPS, gps.latitude, \
             DP_GPS, gps.longitude, \
-            DP_GPS, gps.heading, \
-            DP_DATA, gps.gnd_speed, \
-            DP_GPS, gps.altitude, \
+            DP_DATA, gps.heading, \
+            DP_GPS, gps.gnd_speed, \
+            DP_DATA, gps.altitude, \
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
 
             Serial.flush();

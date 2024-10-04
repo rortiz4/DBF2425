@@ -14,7 +14,8 @@
 #define SERIAL_MONITOR_BAUDRATE 115200 // bits/sec
 #define STARTUP_DELAY 5000 // x2
 #define I2C_BUS_SPEED 200000 // 100kHz Default
-#define GPS_SAMPLE_RATE 10 // Hz (10Hz max)
+#define UTC_TIMEZONE_OFFSET -4 // EST is 4 hours behind UTC
+#define GPS_SAMPLE_RATE 25 // Hz (25Hz max)
 #define NMEA_BUFFER_SIZE 255
 #define INIT_DELAY 100
 
@@ -294,9 +295,9 @@ void read_gps(void* pvParameters) {
     while(true) {
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
         myGNSS.checkUblox();
+        xSemaphoreGive(I2C_MUTEX);
         // Fetch GPS data character by character
         if(!nmea.isValid()) {
-            xSemaphoreGive(I2C_MUTEX);
             if (!first_fix) {
                 new_gps_data.latitude = 0;
                 new_gps_data.longitude = 0;
@@ -317,7 +318,10 @@ void read_gps(void* pvParameters) {
             //vTaskSuspend(NULL);
             continue;
         }
-        first_fix = true;
+        if (!first_fix) {
+            first_fix = true;
+            Serial.printf("First GPS Fix Acquired! (in %f seconds)\n", ((float)micros())/1000000.0);
+        }
         // Store NMEA parsed data (with consistent type-casting)
         long alt_long;
         long heading_long;
@@ -327,14 +331,13 @@ void read_gps(void* pvParameters) {
         float gnd_speed = (float)nmea.getSpeed();
         bool altitude = nmea.getAltitude(alt_long);
         float alt = (float)alt_long;
-        uint8_t hours = (nmea.getHour() - 4); // EST is 4 hours behind UTC
+        uint8_t hours = ((nmea.getHour() + UTC_TIMEZONE_OFFSET + 24) % 24); // EST is 4 hours behind UTC
         uint8_t minutes = nmea.getMinute();
         uint8_t seconds = nmea.getSecond();
         uint8_t hundredths = nmea.getHundredths();
         uint8_t num_sats = (float)nmea.getNumSatellites(); // Can be int but makes queue implementation much easier
         // Clear nmea buffer
         nmea.clear(); // We already stored the data in variables above.
-        xSemaphoreGive(I2C_MUTEX);
         // Adjusting Entries!
         latitude_mdeg = latitude_mdeg / 1000000;
         longitude_mdeg = longitude_mdeg / 1000000;
