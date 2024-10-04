@@ -184,9 +184,9 @@ void read_bno085(void* pvParameters) {
 
                         float euler_vector[3] = {0.0,0.0,0.0};
                         quat2eul(new_imu_data.rotation[0],new_imu_data.rotation[1],new_imu_data.rotation[2],new_imu_data.rotation[3],euler_vector,true);
-                        new_imu_data.euler[0] = euler_vector[0]; // Pitch
+                        new_imu_data.euler[0] = -euler_vector[0]; // Pitch
                         new_imu_data.euler[1] = euler_vector[1]; // Roll
-                        new_imu_data.euler[2] = euler_vector[2]; // Yaw
+                        new_imu_data.euler[2] = -euler_vector[2]; // Yaw
 
                         read_count++;
                         rot_read = true;

@@ -223,6 +223,7 @@ void log_data(void* pvParameters) {
             led_on = true;
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
+        // vTaskDelay(500/portTICK_PERIOD_MS); // Extra Delay to make serial monitor data human-readable. Too fast otherwise!
     }
 }
 
