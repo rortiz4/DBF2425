@@ -13,7 +13,7 @@
 #define LINE_NUM_START 1
 #define DP_DATA 3 // Decimal places to record
 #define DP_GPS 6 // Latitude/Longitude decimal places
-#define GPS_FIX_DELAY_THRESHOLD 0.200 // If more than 200ms passed since last fix, take data from other sensors again
+#define GPS_FIX_DELAY_THRESHOLD 0.100 // If more than 100ms passed since last fix, take data from other sensors again
 
 #define BUILTIN_LED_PIN 15
 
