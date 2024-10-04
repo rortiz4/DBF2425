@@ -13,7 +13,7 @@
 
 #define SERIAL_MONITOR_BAUDRATE 115200 // bits/sec
 #define STARTUP_DELAY 5000 // x2
-#define I2C_BUS_SPEED 200000 // 100kHz Default
+#define I2C_BUS_SPEED 400000 // 100kHz Default
 #define UTC_TIMEZONE_OFFSET -4 // EST is 4 hours behind UTC
 #define GPS_SAMPLE_RATE 25 // Hz (25Hz max)
 #define NMEA_BUFFER_SIZE 255
