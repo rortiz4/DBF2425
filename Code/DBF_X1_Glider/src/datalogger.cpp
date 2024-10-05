@@ -17,8 +17,8 @@
 
 #define BUILTIN_LED_PIN 15
 
-bool log_to_serial = true;
-bool log_to_SD = false;
+bool log_to_serial = false;
+bool log_to_SD = true;
 float current_time = 0;
 File datafile;                              // File object to handle file writing
 
