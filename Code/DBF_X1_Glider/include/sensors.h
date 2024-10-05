@@ -14,7 +14,7 @@ struct IMU_Data {
 
 struct Airspeed_Data {
     unsigned int sensor_id;
-    float diff_pressure[2]; // raw, corrected
+    float diff_pressure;
     float airspeed[2]; // raw, corrected
     float temperature;
 };

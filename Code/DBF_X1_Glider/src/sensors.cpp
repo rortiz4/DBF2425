@@ -11,9 +11,10 @@
 
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define SERIAL_MONITOR_BAUDRATE 115200 // bits/sec
+#define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
 #define STARTUP_DELAY 5000 // x2
 #define I2C_BUS_SPEED 400000 // 100kHz Default
+#define MIN_AIRSPEED 5 // m/s (pitot reads 0 if under 5m/s due to inaccuracy)
 #define UTC_TIMEZONE_OFFSET -4 // EST is 4 hours behind UTC
 #define GPS_SAMPLE_RATE 25 // Hz (25Hz max)
 #define NMEA_BUFFER_SIZE 255
@@ -38,7 +39,7 @@ void init_low_level_hw() {
     delay(STARTUP_DELAY);
     Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v1.0");
     Serial.println("By Daniel Noronha & Ricky Ortiz");
-    Serial.println("Last Software Update: October 03, 2024");
+    Serial.println("Last Software Update: October 05, 2024");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
@@ -272,11 +273,9 @@ void read_ms4525do(void* pvParameters) {
 
         xSemaphoreGive(I2C_MUTEX);
 
-        float corr_diff_pressure = raw_diff_pressure; // Temporarily until accurately calibrated
-        float corr_airspeed = raw_airspeed + 9.441615431; // Temporarily until accurately calibrated
+        float corr_airspeed = (raw_airspeed < MIN_AIRSPEED) ? 0.0:raw_airspeed; // Based on Calibration (airspeed inaccurate below ~5m/s)
 
-        new_airspeed_data.diff_pressure[0] = raw_diff_pressure;
-        new_airspeed_data.diff_pressure[1] = corr_diff_pressure;
+        new_airspeed_data.diff_pressure = raw_diff_pressure;
         new_airspeed_data.airspeed[0] = raw_airspeed;
         new_airspeed_data.airspeed[1] = corr_airspeed;
         new_airspeed_data.temperature = temp_C;
@@ -323,6 +322,8 @@ void read_gps(void* pvParameters) {
             Serial.printf("First GPS Fix Acquired! (in %f seconds)\n", ((float)micros())/1000000.0);
         }
         // Store NMEA parsed data (with consistent type-casting)
+        uint8_t num_sats = nmea.getNumSatellites(); // Can be int but makes queue implementation much easier
+        if (num_sats < 1) continue; // Even if NMEA is valid, we do not want to send data with no satellites (inaccurate)
         long alt_long;
         long heading_long;
         float latitude_mdeg = (float)nmea.getLatitude();
@@ -335,7 +336,6 @@ void read_gps(void* pvParameters) {
         uint8_t minutes = nmea.getMinute();
         uint8_t seconds = nmea.getSecond();
         uint8_t hundredths = nmea.getHundredths();
-        uint8_t num_sats = (float)nmea.getNumSatellites(); // Can be int but makes queue implementation much easier
         // Clear nmea buffer
         nmea.clear(); // We already stored the data in variables above.
         // Adjusting Entries!

@@ -13,7 +13,7 @@
 #define LINE_NUM_START 1
 #define DP_DATA 3 // Decimal places to record
 #define DP_GPS 6 // Latitude/Longitude decimal places
-#define GPS_FIX_DELAY_THRESHOLD 0.100 // If more than 100ms passed since last fix, take data from other sensors again
+#define GPS_FIX_DELAY_THRESHOLD 0.250 // If more than 250ms passed since last fix, take data from other sensors again
 
 #define BUILTIN_LED_PIN 15
 
@@ -65,7 +65,7 @@ void init_SD(bool serial_log, bool SD_log) {
     }
     // Write Header to file
     const char csv_header[] =   "Line_Num,ESP32_Time,ID0,LinAcc_x,LinAcc_y,LinAcc_z,Pitch_deg,Roll_deg,Yaw_deg,Gyro_deg_x,Gyro_deg_y,Gyro_deg_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
-                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1,RawPress_Pa,CorrPressPa,RawAirspeed,CorrAirspeed,temp_C,"
+                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1,RawPress_Pa,RawAirspeed,CorrAirspeed,temp_C,"
                                 "ID2,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites\n";
 
     Serial.println("Writing .csv header:");
@@ -73,7 +73,6 @@ void init_SD(bool serial_log, bool SD_log) {
     datafile.flush(); 
     if (log_to_serial) {
         Serial.print(csv_header);
-        Serial.flush();
     }
     Serial.println(".csv Header Writing DONE!");
 }
@@ -86,7 +85,6 @@ void log_data(void* pvParameters) {
     digitalWrite(BUILTIN_LED_PIN, LOW);
     bool led_on = false;
     unsigned long line_num = LINE_NUM_START; // These are only initialized once
-    Serial.flush();
     while(true) {
         // See queues.h for definition of structs
 
@@ -95,6 +93,7 @@ void log_data(void* pvParameters) {
         float almost_current_time = 0;
         // Check GPS first since that is the slowest (others should already be taken)
         prev_time = (float)((micros() - start_time)/1000000.0);
+        // Serial.println("Taking GPS Semaphore");
         xSemaphoreTake(gps_done, portMAX_DELAY);
         almost_current_time = (float)((micros() - start_time)/1000000.0); // Convert us (micros) to s
         xQueueReceive(GPS_Queue, &gps, portMAX_DELAY);
@@ -102,7 +101,7 @@ void log_data(void* pvParameters) {
 
 // If GPS regains fix after a long time (more than 1s), take IMU/Airspeed readings twice
         if ((almost_current_time - prev_time) > GPS_FIX_DELAY_THRESHOLD) {
-            Serial.printf("GPS fix lost, then regained after %f seconds!\n", (almost_current_time - prev_time));
+            if (log_to_serial) Serial.printf("GPS fix lost, then regained after %f seconds!\n", (almost_current_time - prev_time));
             xSemaphoreTake(imu_done, portMAX_DELAY);
             xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
             vTaskResume(read_imu_task);
@@ -118,10 +117,12 @@ void log_data(void* pvParameters) {
             vTaskResume(read_pitot_task);
         }
         else {
+            // Serial.println("Taking IMU Semaphore");
             xSemaphoreTake(imu_done, portMAX_DELAY);
             xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
             vTaskResume(read_imu_task);
 
+            // Serial.println("Taking Airspeed Semaphore");
             xSemaphoreTake(airspeed_done, portMAX_DELAY);
             xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
             vTaskResume(read_pitot_task);
@@ -154,9 +155,8 @@ void log_data(void* pvParameters) {
             DP_DATA, imu.rotation[3]);
 
             // Airspeed/Pitot Tube Data
-            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
-            DP_DATA, pitot.diff_pressure[0], \
-            DP_DATA, pitot.diff_pressure[1], \
+            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
+            DP_DATA, pitot.diff_pressure, \
             DP_DATA, pitot.airspeed[0], \
             DP_DATA, pitot.airspeed[1], \
             DP_DATA, pitot.temperature);
@@ -195,13 +195,17 @@ void log_data(void* pvParameters) {
             DP_DATA, imu.rotation[2], \
             DP_DATA, imu.rotation[3]);
 
+            // Serial.flush();
+
             // Airspeed/Pitot Tube Data
-            Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
-            DP_DATA, pitot.diff_pressure[0], \
-            DP_DATA, pitot.diff_pressure[1], \
+            Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
+            DP_DATA, pitot.diff_pressure, \
             DP_DATA, pitot.airspeed[0], \
             DP_DATA, pitot.airspeed[1], \
             DP_DATA, pitot.temperature);
+
+            // Serial.flush();
+
             // GPS Data
             Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u\n", gps.sensor_id, \
             DP_GPS, gps.latitude, \
@@ -211,7 +215,7 @@ void log_data(void* pvParameters) {
             DP_DATA, gps.altitude, \
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
 
-            Serial.flush();
+            // Serial.flush();
         }
 
         line_num++;
@@ -224,7 +228,7 @@ void log_data(void* pvParameters) {
             led_on = true;
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
-        // vTaskDelay(500/portTICK_PERIOD_MS); // Extra Delay to make serial monitor data human-readable. Too fast otherwise!
+        // vTaskDelay(500/portTICK_PERIOD_MS); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
     }
 }
 
