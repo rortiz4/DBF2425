@@ -72,7 +72,7 @@ class Ms4525do {
   static constexpr int16_t T_CNT_ = 2047;
   static constexpr float T_MAX_ = 150;
   static constexpr float T_MIN_ = -50;
-  static constexpr float rho = 1.168826;
+  static constexpr float rho = 1.16218;
   static constexpr float pascal_per_psi = 6894.7572931783; //Used to convert psi to pascal
   /* 
   At an altitude of 223 meters (Notre Dame Altitude), the pressure at sea level being 101325 Pa, and assuming 70 F temperature, the air pressure 
