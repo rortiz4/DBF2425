@@ -198,9 +198,9 @@ void read_bno085(void* pvParameters) {
                 case SH2_LINEAR_ACCELERATION:
                     // Only read data from a particular sensor once in the while loop
                     if(!acc_read) {
-                        new_imu_data.lin_accel[0] = bno085_value.un.linearAcceleration.x; // m/s^2
-                        new_imu_data.lin_accel[1] = bno085_value.un.linearAcceleration.y; // m/s^2
-                        new_imu_data.lin_accel[2] = bno085_value.un.linearAcceleration.z; // m/s^2
+                        new_imu_data.lin_accel[0] = bno085_value.un.linearAcceleration.x * 3.28084; // ft/s^2
+                        new_imu_data.lin_accel[1] = bno085_value.un.linearAcceleration.y * 3.28084; // ft/s^2
+                        new_imu_data.lin_accel[2] = bno085_value.un.linearAcceleration.z * 3.28084; // ft/s^2
                         xSemaphoreGive(I2C_MUTEX);
                         read_count++;
                         acc_read = true;
@@ -210,9 +210,9 @@ void read_bno085(void* pvParameters) {
                 case SH2_GRAVITY:
                     // Only read data from a particular sensor once in the while loop
                     if(!grav_read) {
-                        new_imu_data.gravity[0] = bno085_value.un.gravity.x; // m/s^2
-                        new_imu_data.gravity[1] = bno085_value.un.gravity.y; // m/s^2
-                        new_imu_data.gravity[2] = bno085_value.un.gravity.z; // m/s^2
+                        new_imu_data.gravity[0] = bno085_value.un.gravity.x * 3.28084; // ft/s^2
+                        new_imu_data.gravity[1] = bno085_value.un.gravity.y * 3.28084; // ft/s^2
+                        new_imu_data.gravity[2] = bno085_value.un.gravity.z * 3.28084; // ft/s^2
                         xSemaphoreGive(I2C_MUTEX);
                         read_count++;
                         grav_read = true;
@@ -269,7 +269,7 @@ void read_ms4525do(void* pvParameters) {
         // Must initialize a vector like so: float output_vector[5]; to store data.
         float raw_diff_pressure = ms4525do.pres_pa();
         float temp_C = ms4525do.die_temp_c();
-        float raw_airspeed = ms4525do.aspeed();
+        float raw_airspeed = ms4525do.aspeed() * 3.28084; // m/s to ft/s
 
         xSemaphoreGive(I2C_MUTEX);
 
