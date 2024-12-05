@@ -1,16 +1,13 @@
 // This file contains all SD card related functions to initialize and write to the SD Card
-#include "SPI.h"
-#include "SD.h"
+#include <SPI.h>
+#include <SD.h>
+#include "pin_map.h"
 #include "datalogger.h"
 #include "sensors.h"
 #include "tasks.h"
 #include "queues.h"
 #include "semaphores.h"
 
-#define SD_CS 5
-#define SD_MISO 25
-#define SD_MOSI 26
-#define SD_SCK 27
 #define FILE_COUNT_START 0
 #define INIT_DELAY_SD 100
 #define LINE_NUM_START 1
@@ -18,11 +15,8 @@
 #define DP_GPS 6 // Latitude/Longitude decimal places
 #define GPS_FIX_DELAY_THRESHOLD 0.250 // If more than 250ms passed since last fix, take data from other sensors again
 
-#define BUILTIN_LED_PIN 2
-
-bool log_to_serial = false;
-bool log_to_SD = true;
-float current_time = 0;
+bool log_to_serial;
+bool log_to_SD;
 File datafile;                              // File object to handle file writing
 SPIClass mySPI(VSPI);
 
@@ -86,6 +80,7 @@ void init_SD(bool serial_log, bool SD_log) {
 }
 
 void log_data(void* pvParameters) {
+    float current_time = 0;
     pinMode(BUILTIN_LED_PIN, OUTPUT);
     IMU_Data imu;
     Airspeed_Data pitot;

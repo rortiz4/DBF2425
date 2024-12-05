@@ -1,4 +1,3 @@
-Datafile Size: 1.52MB/5min = 304kB/min = 5.1kbps
 RTOS Features Implemented:
 (Sensors):
 - IMU
@@ -57,22 +56,28 @@ Sample Rate Estimates:
 - All Sensors Together: 10Hz originally (excluding GPS)
 - After Optimizations (lower stack size, using dual core, etc.): 15.34Hz rate (excluding GPS)
 
-TODO:
-Tasks:
+TODO (as of 12/04/2024):
+New Tasks:
 - Release Detection: Detect when IOXX has been pulled LOW/HIGH
 - Strobe LED: Blink the LED (IOXX)
 - 180 Degree Turn (any angle allowed actually): Counter-Rotate Pitcherons. Compares current bearing vs. current bearing-180 degrees
 - Level Roll: Counter-Rotate to maintain level flight (+/-5 deg of roll allowed). If bank angle exceeds +/-5 degrees, rotate back to center
 - Level Pitch: Rotate pitcherons together to maintain airspeed target (pitch up to slow down, down to speed up)
-Note: Level Roll has priority over Level Pitch
+Note: Level Roll has priority over Level Pitch (semaphore required). Could combine 3 tasks above into 1 Autopilot task.
 
-Queues:
-- Flight Data (source: datalogger task, sinks: 180 degree turn and level flight tasks)
+New Queues:
+- Flight Data (source: datalogger task function, sinks: 180 degree turn and level flight tasks)
+- Servo Angle Data (source: actuate_pitcherons in pitcherons_servos.cpp, sink: datalogger task function)
 
-Semaphores:
+New Semaphores:
 - Release Detection Semaphore (release detection task gives, strobe LED task takes)
 - 180 Degree Turn Semaphore (180 degree turn task gives, level roll task takes)
 - Level Roll Semaphore (Level roll task gives, Level Pitch task takes)
+- OR just ONE Autopilot Done Semaphore for datalogger
 
 New Files:
-- servos.h, servos.c: contains code to initialize servos and actuate to an angle (no direct tasks)
+- pin_map.h: consolidates all physical I/O pin assignments (from PCB schematic)
+- pitcherons_servos.h, pitcherons_servos.c: contain code to initialize servos and actuate to an angle (no direct tasks)
+Note: servos.h will contain struct to hold servo angle data (int angle and int act_type_direction)
+- strobe.h, strobe.cpp: contain code to initialize Addon strobe LED and task function for blinking (+ Data struct)
+- autopilot.h, autopilot.cpp: contain task functions that actually perform turns and pitch adjustments based on sensor data.

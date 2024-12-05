@@ -4,9 +4,11 @@
 #include "semaphores.h"
 #include "sensors.h"
 #include "datalogger.h"
+#include "pitcherons_servos.h"
 
 #define SERIAL_LOG true // Log Data to Serial
 #define SD_LOG false // Log Data to SD Card file
+#define SERVO_ACTUATION_TESTS true // Perform pitcheron servo tests during initialization? 
 
 void setup() {
     delay(3000);
@@ -14,8 +16,8 @@ void setup() {
     init_queues();
     init_semaphores();
     init_all_sensors();
-    // FORMAT SD CARD TO FAT32 BEFORE FIRST USE
-    init_SD(SERIAL_LOG, SD_LOG);
+    init_servos(SERVO_ACTUATION_TESTS);
+    init_SD(SERIAL_LOG, SD_LOG); // FORMAT SD CARD TO FAT32 BEFORE FIRST USE
     init_tasks();
     Serial.println("All Systems ONLINE! All Tasks Started Successfully! RTOS Task Scheduler RUNNING!\n");
     /*

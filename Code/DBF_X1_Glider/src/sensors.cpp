@@ -1,9 +1,10 @@
 // This file contains all sensor related code functions to initialize and read from sensors.
 #include <Arduino.h>
+#include <Wire.h>
+#include "pin_map.h"
 #include "sensors.h"
 #include "queues.h"
 #include "semaphores.h"
-#include <Wire.h>
 /* Include Sensor Libraries */
 #include <Adafruit_BNO08x.h>
 //#include "ms4525do.h"
@@ -13,8 +14,6 @@
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
-#define SDA_PIN 21
-#define SCL_PIN 22
 #define STARTUP_DELAY 5000 // x2
 #define I2C_BUS_SPEED 400000 // 100kHz Default
 #define MIN_AIRSPEED 5 // m/s (pitot reads 0 if under 5m/s due to inaccuracy)
