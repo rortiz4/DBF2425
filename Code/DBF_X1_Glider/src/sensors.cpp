@@ -6,12 +6,15 @@
 #include <Wire.h>
 /* Include Sensor Libraries */
 #include <Adafruit_BNO08x.h>
-#include "ms4525do.h"
+//#include "ms4525do.h"
+#include "Honeywell_ABP.h"
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
+#define SDA_PIN 21
+#define SCL_PIN 22
 #define STARTUP_DELAY 5000 // x2
 #define I2C_BUS_SPEED 400000 // 100kHz Default
 #define MIN_AIRSPEED 5 // m/s (pitot reads 0 if under 5m/s due to inaccuracy)
@@ -25,7 +28,13 @@
 Adafruit_BNO08x bno085(-1);
 sh2_SensorValue_t bno085_value;
 // MS4525DO
-bfs::Ms4525do ms4525do;
+// bfs::Ms4525do ms4525do;
+Honeywell_ABP abp(
+    0x28,   // I2C address
+    0,      // minimum pressure
+    1,      // maximum pressure
+    "psi"   // pressure unit
+);
 // GPS
 SFE_UBLOX_GNSS myGNSS;
 // Create buffer variables for NMEA Sentence Parsing
@@ -43,7 +52,7 @@ void init_low_level_hw() {
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
-    Wire.begin();
+    Wire.begin(SDA_PIN, SCL_PIN);
     Wire.setClock(I2C_BUS_SPEED);
     Serial.println("Serial IO & I2C Initialized Successfully!");
 }
@@ -89,12 +98,12 @@ bool init_bno085() {
 bool init_ms4525do() {
     Serial.print("Initializing MS4525DO Differential Pressure/Airspeed Sensor...");
     // I2C address of 0x28, on bus 0, with a -1 to +1 PSI range for pressure transducer
-    ms4525do.Config(&Wire, 0x28, 1.0f, -1.0f);
+    //ms4525do.Config(&Wire, 0x28, 1.0f, -1.0f);
     // Starting communication with the pressure transducer
-    if (!ms4525do.Begin()) {
-        Serial.println("\nError communicating with sensor!");
-        return false;
-    }
+    //if (!ms4525do.Begin()) {
+    //    Serial.println("\nError communicating with sensor!");
+    //    return false;
+    //}
     Serial.println("DONE!");
     return true;
 }
@@ -262,22 +271,25 @@ void read_ms4525do(void* pvParameters) {
     new_airspeed_data.sensor_id = 1;
     while(true) {
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
+        /*
         if(!ms4525do.Read()) {
             xSemaphoreGive(I2C_MUTEX);
             continue;
         }
+        */
+       abp.update();
         // Must initialize a vector like so: float output_vector[5]; to store data.
-        float raw_diff_pressure = ms4525do.pres_pa();
-        float temp_C = ms4525do.die_temp_c();
-        float raw_airspeed = ms4525do.aspeed() * 3.28084; // m/s to ft/s
+        float raw_diff_pressure = abp.pressure();
+        float temp_C = abp.temperature();
+        float raw_airspeed = 0;//ms4525do.aspeed() * 3.28084; // m/s to ft/s
 
         xSemaphoreGive(I2C_MUTEX);
 
-        float corr_airspeed = (raw_airspeed < MIN_AIRSPEED) ? 0.0:raw_airspeed; // Based on Calibration (airspeed inaccurate below ~5m/s)
+        //float corr_airspeed = (raw_airspeed < MIN_AIRSPEED) ? 0.0:raw_airspeed; // Based on Calibration (airspeed inaccurate below ~5m/s)
 
         new_airspeed_data.diff_pressure = raw_diff_pressure;
-        new_airspeed_data.airspeed[0] = raw_airspeed;
-        new_airspeed_data.airspeed[1] = corr_airspeed;
+        new_airspeed_data.airspeed[0] = 0;//raw_airspeed;
+        new_airspeed_data.airspeed[1] = 0;//corr_airspeed;
         new_airspeed_data.temperature = temp_C;
 
         xQueueSend(Airspeed_Queue, &new_airspeed_data, portMAX_DELAY);

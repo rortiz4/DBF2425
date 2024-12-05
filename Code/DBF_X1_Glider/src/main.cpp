@@ -5,8 +5,8 @@
 #include "sensors.h"
 #include "datalogger.h"
 
-#define SERIAL_LOG false // Log Data to Serial
-#define SD_LOG true // Log Data to SD Card file
+#define SERIAL_LOG true // Log Data to Serial
+#define SD_LOG false // Log Data to SD Card file
 
 void setup() {
     delay(3000);

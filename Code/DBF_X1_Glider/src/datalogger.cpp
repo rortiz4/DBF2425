@@ -1,13 +1,16 @@
 // This file contains all SD card related functions to initialize and write to the SD Card
-#include <SPI.h>
-#include <SD.h>
+#include "SPI.h"
+#include "SD.h"
 #include "datalogger.h"
 #include "sensors.h"
 #include "tasks.h"
 #include "queues.h"
 #include "semaphores.h"
 
-#define SD_CS_PIN 5
+#define SD_CS 5
+#define SD_MISO 25
+#define SD_MOSI 26
+#define SD_SCK 27
 #define FILE_COUNT_START 0
 #define INIT_DELAY_SD 100
 #define LINE_NUM_START 1
@@ -15,12 +18,13 @@
 #define DP_GPS 6 // Latitude/Longitude decimal places
 #define GPS_FIX_DELAY_THRESHOLD 0.250 // If more than 250ms passed since last fix, take data from other sensors again
 
-#define BUILTIN_LED_PIN 15
+#define BUILTIN_LED_PIN 2
 
 bool log_to_serial = false;
 bool log_to_SD = true;
 float current_time = 0;
 File datafile;                              // File object to handle file writing
+SPIClass mySPI(VSPI);
 
 void init_SD(bool serial_log, bool SD_log) {
     if (serial_log) log_to_serial = true;
@@ -31,9 +35,13 @@ void init_SD(bool serial_log, bool SD_log) {
     unsigned int file_counter = FILE_COUNT_START;        // Start the file counter at 1
     char filename[16];
     Serial.print("Initializing SD Card...");
-    pinMode(SD_CS_PIN, OUTPUT);
-    while (!SD.begin(SD_CS_PIN)) {
+    pinMode(SD_CS, OUTPUT);
+    digitalWrite(SD_CS, HIGH);
+    mySPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+    // SPI.setFrequency(1000000);
+    while (!SD.begin(SD_CS, mySPI, 80000000)) {
         Serial.println("Card failed, or not present. Retrying..."); // Retry if SD card can't be initialized
+        delay(500);
     }
     Serial.println("DONE!");
     Serial.println("Searching for next available filename");
@@ -228,7 +236,7 @@ void log_data(void* pvParameters) {
             led_on = true;
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
-        // vTaskDelay(500/portTICK_PERIOD_MS); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
+        //vTaskDelay(250/portTICK_PERIOD_MS); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
     }
 }
 

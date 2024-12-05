@@ -81,7 +81,7 @@
     "files": [
       {
         "name": "DBF2425_PCB.kicad_sch",
-        "open": true,
+        "open": false,
         "window": {
           "display": 0,
           "maximized": true,
