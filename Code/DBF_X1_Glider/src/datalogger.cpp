@@ -4,6 +4,7 @@
 #include "pin_map.h"
 #include "datalogger.h"
 #include "sensors.h"
+#include "autopilot.h"
 #include "pitcheron_servos.h"
 #include "tasks.h"
 #include "queues.h"
@@ -67,10 +68,11 @@ void init_SD(bool serial_log, bool SD_log) {
         }
     }
     // Write Header to file
-    const char csv_header[] =   "Line_Num,ESP32_Time,ID0,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
-                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
-                                "ID2,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
-                                "ID3,servo_L_angle,servo_R_angle,servo_angle_target,servo_action_target\n";
+    const char csv_header[] =   "Line_Num,ESP32_Time_s,ID0_IMU,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
+                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1_ASPD,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
+                                "ID2_GPS,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
+                                "ID3_AP,AP_Mode,AP_HDGSEL,AP_PITCH,"
+                                "ID4_SERVO,servo_L_angle,servo_R_angle,servo_angle_target,servo_action_target\n";
 
     Serial.println("Writing .csv header:");
     datafile.print(csv_header);
@@ -87,40 +89,44 @@ void log_data(void* pvParameters) {
     IMU_Data imu;
     Airspeed_Data pitot;
     GPS_Data gps;
+    Flight_Data ap_input_data;
+    Autopilot_Data AP_data;
     Pitcheron_Data pitcherons;
     digitalWrite(BUILTIN_LED_PIN, LOW);
     bool led_on = false;
     unsigned long line_num = LINE_NUM_START; // These are only initialized once
     while(true) {
-        // See queues.h for definition of structs
-
         static unsigned long start_time = micros();
-        float prev_time = 0;
-        float almost_current_time = 0;
-        // Check GPS first since that is the slowest (others should already be taken)
-        prev_time = (float)((micros() - start_time)/1000000.0);
         // Serial.println("Taking GPS Semaphore");
-        xSemaphoreTake(gps_done, portMAX_DELAY);
-        almost_current_time = (float)((micros() - start_time)/1000000.0); // Convert us (micros) to s
+        // xSemaphoreTake(gps_done, portMAX_DELAY);
         xQueueReceive(GPS_Queue, &gps, portMAX_DELAY);
-        vTaskResume(read_gps_task);
 
         // Serial.println("Taking IMU Semaphore");
-        xSemaphoreTake(imu_done, portMAX_DELAY);
+        // xSemaphoreTake(imu_done, portMAX_DELAY);
         xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
-        vTaskResume(read_imu_task);
 
         // Serial.println("Taking Airspeed Semaphore");
-        xSemaphoreTake(airspeed_done, portMAX_DELAY);
+        // xSemaphoreTake(airspeed_done, portMAX_DELAY);
         xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
-        vTaskResume(read_pitot_task);
-
-        // Serial.println("Taking Autopilot Semaphore");
-        // xSemaphoreTake(autopilot_done, portMAX_DELAY);
-        xQueueReceive(Pitcheron_Queue, &pitcherons, portMAX_DELAY);
-        // vTaskResume(autopilot);
 
         current_time = (float)((micros() - start_time)/1000000.0);
+        // Load received data onto Flight_Data_Queue for Autopilot
+        ap_input_data.time = current_time;
+        ap_input_data.pitch = imu.euler[0];
+        ap_input_data.roll = imu.euler[1];
+        ap_input_data.yaw = imu.euler[2];
+        ap_input_data.airspeed = pitot.airspeed[1]; // Corrected airspeed
+        ap_input_data.gnd_speed = gps.gnd_speed;
+        ap_input_data.latitude = gps.latitude;
+        ap_input_data.longitude = gps.longitude;
+        ap_input_data.heading = gps.heading;
+
+        xQueueSend(Flight_Data_Queue, &ap_input_data, portMAX_DELAY);
+
+        // Serial.println("Taking Autopilot Semaphore");
+        xQueueReceive(Autopilot_Queue, &AP_data, portMAX_DELAY);
+        xQueueReceive(Pitcheron_Queue, &pitcherons, portMAX_DELAY);
+
 
         // Log Data to datafile
         if (log_to_SD) {
@@ -154,13 +160,17 @@ void log_data(void* pvParameters) {
             DP_DATA, pitot.airspeed[1]);
 
             // GPS Data
-            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u", gps.sensor_id, \
+            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u,", gps.sensor_id, \
             DP_GPS, gps.latitude, \
             DP_GPS, gps.longitude, \
             DP_GPS, gps.heading, \
             DP_DATA, gps.gnd_speed, \
             DP_GPS, gps.altitude, \
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
+
+            // Autopilot Data
+            datafile.printf("%u,%s,%.*f,%.*f,", AP_data.sensor_id, \
+            AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_pitch);
 
             // Servo Data
             datafile.printf("%u,%d,%d,%d,%s\n", pitcherons.sensor_id, \
@@ -206,7 +216,7 @@ void log_data(void* pvParameters) {
             // Serial.flush();
 
             // GPS Data
-            Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u\n", gps.sensor_id, \
+            Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u,", gps.sensor_id, \
             DP_GPS, gps.latitude, \
             DP_GPS, gps.longitude, \
             DP_DATA, gps.heading, \
@@ -214,6 +224,17 @@ void log_data(void* pvParameters) {
             DP_DATA, gps.altitude, \
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
 
+            // Autopilot Data
+            Serial.printf("%u,%s,%.*f,%.*f,", AP_data.sensor_id, \
+            AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_pitch);
+
+            // Servo Data
+            Serial.printf("%u,%d,%d,%d,%s\n", pitcherons.sensor_id, \
+            pitcherons.raw_angle_l, \
+            pitcherons.raw_angle_r, \
+            pitcherons.angle_target, \ 
+            pitcherons.action_target); // Do not use comma in action target String!
+            
             // Serial.flush();
         }
 
@@ -228,6 +249,9 @@ void log_data(void* pvParameters) {
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
         //vTaskDelay(250/portTICK_PERIOD_MS); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
+        vTaskResume(read_gps_task);
+        vTaskResume(read_imu_task);
+        vTaskResume(read_pitot_task);
     }
 }
 

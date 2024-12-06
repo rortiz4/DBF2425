@@ -67,6 +67,7 @@ Note: Level Roll has priority over Level Pitch (semaphore required). Could combi
 
 New Queues:
 - Flight Data (source: datalogger task function, sinks: 180 degree turn and level flight OR Autopilot tasks)
+- Autopilot Data (source: Autopilot task, sink: datalogger)
 - Servo Angle Data (source: actuate_pitcherons in pitcherons_servos.cpp, sink: datalogger task function)
 
 New Semaphores:

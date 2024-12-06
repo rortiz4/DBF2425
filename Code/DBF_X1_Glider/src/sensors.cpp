@@ -259,7 +259,7 @@ void read_bno085(void* pvParameters) {
             }
         }
         xQueueSend(IMU_Queue, &new_imu_data, portMAX_DELAY);
-        xSemaphoreGive(imu_done);
+        // xSemaphoreGive(imu_done);
         vTaskSuspend(NULL); // Data logging task will resume this as soon as all data has been logged.
         // If queue sending fails, it will try again without suspending.
     }
@@ -279,7 +279,6 @@ void read_ms4525do(void* pvParameters) {
         }
         */
        abp.update();
-        // Must initialize a vector like so: float output_vector[5]; to store data.
         float raw_diff_pressure = abp.pressure();
         float temp_C = abp.temperature();
         float raw_airspeed = 0;//ms4525do.aspeed() * 3.28084; // m/s to ft/s
@@ -294,7 +293,7 @@ void read_ms4525do(void* pvParameters) {
         new_airspeed_data.temperature = temp_C;
 
         xQueueSend(Airspeed_Queue, &new_airspeed_data, portMAX_DELAY);
-        xSemaphoreGive(airspeed_done);
+        // xSemaphoreGive(airspeed_done);
         vTaskSuspend(NULL); // Data logging task will resume this as soon as all data has been logged.
     }
 }
@@ -322,7 +321,7 @@ void read_gps(void* pvParameters) {
                 new_gps_data.hundredths = 0;
                 new_gps_data.satellites = 0;
                 xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
-                xSemaphoreGive(gps_done);
+                // xSemaphoreGive(gps_done);
                 vTaskSuspend(NULL);
             }
             //xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
@@ -371,7 +370,7 @@ void read_gps(void* pvParameters) {
         new_gps_data.satellites = num_sats;
 
         xQueueSend(GPS_Queue, &new_gps_data, portMAX_DELAY);
-        xSemaphoreGive(gps_done);
+        // xSemaphoreGive(gps_done);
         vTaskSuspend(NULL);
     }
     

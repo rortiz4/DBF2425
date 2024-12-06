@@ -128,7 +128,7 @@ void init_servos(bool actuation_test = true) {
 void actuate_pitcherons(int angle, enum Pitcheron_Actions act_type_direction) {
     angle = abs(angle); // Ensure angle is positive always.
     Pitcheron_Data new_pitcheron_data;
-    new_pitcheron_data.sensor_id = 3;
+    new_pitcheron_data.sensor_id = 4;
     new_pitcheron_data.angle_target = angle;
     switch(act_type_direction) {
         case WINGS_LEVEL:
@@ -180,5 +180,5 @@ void actuate_pitcherons(int angle, enum Pitcheron_Actions act_type_direction) {
             new_pitcheron_data.raw_angle_r = RAW_TRIM_R+0;
             break;
     }
-    xQueueSendToBack(Pitcheron_Queue, &new_pitcheron_data, portMAX_DELAY);
+    xQueueSend(Pitcheron_Queue, &new_pitcheron_data, portMAX_DELAY);
 }
