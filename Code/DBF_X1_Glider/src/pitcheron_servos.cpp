@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include "pin_map.h"
-#include "pitcherons_servos.h"
+#include "pitcheron_servos.h"
 #include "queues.h"
 
 // https://cdn.shopify.com/s/files/1/0570/1766/3541/files/X08H_V6.0_Technical_Specifcation.pdf?v=1700472376
@@ -18,8 +18,6 @@
 #define RAW_TRIM_L 0 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
 #define RAW_TRIM_R 0 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
 // Define Servo Physical Limits
-#define MIN_SERVO_ANGLE -60 // deg (unused except for internal angle2us mapping because dangerous!)
-#define MAX_SERVO_ANGLE 60 // deg (unused except for internal angle2us mapping because dangerous!)
 #define MIN_SERVO_us 1000 // us
 #define MAX_SERVO_us 2000 // us
 #define PWM_FREQUENCY 333 // Hz
@@ -182,4 +180,5 @@ void actuate_pitcherons(int angle, enum Pitcheron_Actions act_type_direction) {
             new_pitcheron_data.raw_angle_r = RAW_TRIM_R+0;
             break;
     }
+    xQueueSendToBack(Pitcheron_Queue, &new_pitcheron_data, portMAX_DELAY);
 }

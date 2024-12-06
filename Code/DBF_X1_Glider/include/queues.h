@@ -6,6 +6,7 @@
 extern QueueHandle_t IMU_Queue;
 extern QueueHandle_t Airspeed_Queue;
 extern QueueHandle_t GPS_Queue;
+extern QueueHandle_t Pitcheron_Queue;
 
 void init_queues();
 

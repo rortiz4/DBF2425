@@ -4,6 +4,7 @@
 #include "pin_map.h"
 #include "datalogger.h"
 #include "sensors.h"
+#include "pitcheron_servos.h"
 #include "tasks.h"
 #include "queues.h"
 #include "semaphores.h"
@@ -66,9 +67,10 @@ void init_SD(bool serial_log, bool SD_log) {
         }
     }
     // Write Header to file
-    const char csv_header[] =   "Line_Num,ESP32_Time,ID0,LinAcc_x,LinAcc_y,LinAcc_z,Pitch_deg,Roll_deg,Yaw_deg,Gyro_deg_x,Gyro_deg_y,Gyro_deg_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
-                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1,RawPress_Pa,RawAirspeed,CorrAirspeed,temp_C,"
-                                "ID2,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites\n";
+    const char csv_header[] =   "Line_Num,ESP32_Time,ID0,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
+                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
+                                "ID2,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
+                                "ID3,servo_L_angle,servo_R_angle,servo_angle_target,servo_action_target\n";
 
     Serial.println("Writing .csv header:");
     datafile.print(csv_header);
@@ -85,6 +87,7 @@ void log_data(void* pvParameters) {
     IMU_Data imu;
     Airspeed_Data pitot;
     GPS_Data gps;
+    Pitcheron_Data pitcherons;
     digitalWrite(BUILTIN_LED_PIN, LOW);
     bool led_on = false;
     unsigned long line_num = LINE_NUM_START; // These are only initialized once
@@ -102,34 +105,20 @@ void log_data(void* pvParameters) {
         xQueueReceive(GPS_Queue, &gps, portMAX_DELAY);
         vTaskResume(read_gps_task);
 
-// If GPS regains fix after a long time (more than 1s), take IMU/Airspeed readings twice
-        if ((almost_current_time - prev_time) > GPS_FIX_DELAY_THRESHOLD) {
-            if (log_to_serial) Serial.printf("GPS fix lost, then regained after %f seconds!\n", (almost_current_time - prev_time));
-            xSemaphoreTake(imu_done, portMAX_DELAY);
-            xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
-            vTaskResume(read_imu_task);
-            xSemaphoreTake(imu_done, portMAX_DELAY);
-            xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
-            vTaskResume(read_imu_task);
-            
-            xSemaphoreTake(airspeed_done, portMAX_DELAY);
-            xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
-            vTaskResume(read_pitot_task);
-            xSemaphoreTake(airspeed_done, portMAX_DELAY);
-            xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
-            vTaskResume(read_pitot_task);
-        }
-        else {
-            // Serial.println("Taking IMU Semaphore");
-            xSemaphoreTake(imu_done, portMAX_DELAY);
-            xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
-            vTaskResume(read_imu_task);
+        // Serial.println("Taking IMU Semaphore");
+        xSemaphoreTake(imu_done, portMAX_DELAY);
+        xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
+        vTaskResume(read_imu_task);
 
-            // Serial.println("Taking Airspeed Semaphore");
-            xSemaphoreTake(airspeed_done, portMAX_DELAY);
-            xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
-            vTaskResume(read_pitot_task);
-        }
+        // Serial.println("Taking Airspeed Semaphore");
+        xSemaphoreTake(airspeed_done, portMAX_DELAY);
+        xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
+        vTaskResume(read_pitot_task);
+
+        // Serial.println("Taking Autopilot Semaphore");
+        // xSemaphoreTake(autopilot_done, portMAX_DELAY);
+        xQueueReceive(Pitcheron_Queue, &pitcherons, portMAX_DELAY);
+        // vTaskResume(autopilot);
 
         current_time = (float)((micros() - start_time)/1000000.0);
 
@@ -160,17 +149,25 @@ void log_data(void* pvParameters) {
             // Airspeed/Pitot Tube Data
             datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
             DP_DATA, pitot.diff_pressure, \
+            DP_DATA, pitot.temperature, \
             DP_DATA, pitot.airspeed[0], \
-            DP_DATA, pitot.airspeed[1], \
-            DP_DATA, pitot.temperature);
+            DP_DATA, pitot.airspeed[1]);
+
             // GPS Data
-            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u\n", gps.sensor_id, \
+            datafile.printf("%u,%.*f,%.*f,%.*f,%.*f,%.*f,%u,%u,%u,%u,%u", gps.sensor_id, \
             DP_GPS, gps.latitude, \
             DP_GPS, gps.longitude, \
             DP_GPS, gps.heading, \
             DP_DATA, gps.gnd_speed, \
             DP_GPS, gps.altitude, \
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
+
+            // Servo Data
+            datafile.printf("%u,%d,%d,%d,%s\n", pitcherons.sensor_id, \
+            pitcherons.raw_angle_l, \
+            pitcherons.raw_angle_r, \
+            pitcherons.angle_target, \ 
+            pitcherons.action_target); // Do not use comma in action target String!
 
             datafile.flush();
         }
@@ -203,10 +200,9 @@ void log_data(void* pvParameters) {
             // Airspeed/Pitot Tube Data
             Serial.printf("%u,%.*f,%.*f,%.*f,%.*f,", pitot.sensor_id, \
             DP_DATA, pitot.diff_pressure, \
+            DP_DATA, pitot.temperature, \
             DP_DATA, pitot.airspeed[0], \
-            DP_DATA, pitot.airspeed[1], \
-            DP_DATA, pitot.temperature);
-
+            DP_DATA, pitot.airspeed[1]);
             // Serial.flush();
 
             // GPS Data

@@ -66,11 +66,10 @@ New Tasks:
 Note: Level Roll has priority over Level Pitch (semaphore required). Could combine 3 tasks above into 1 Autopilot task.
 
 New Queues:
-- Flight Data (source: datalogger task function, sinks: 180 degree turn and level flight tasks)
+- Flight Data (source: datalogger task function, sinks: 180 degree turn and level flight OR Autopilot tasks)
 - Servo Angle Data (source: actuate_pitcherons in pitcherons_servos.cpp, sink: datalogger task function)
 
 New Semaphores:
-- Release Detection Semaphore (release detection task gives, strobe LED task takes)
 - 180 Degree Turn Semaphore (180 degree turn task gives, level roll task takes)
 - Level Roll Semaphore (Level roll task gives, Level Pitch task takes)
 - OR just ONE Autopilot Done Semaphore for datalogger

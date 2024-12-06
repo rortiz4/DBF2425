@@ -1,9 +1,11 @@
-#ifndef PITCHERONS_SERVOS_H
-#define PITCHERONS_SERVOS_H
+#ifndef PITCHERON_SERVOS_H
+#define PITCHERON_SERVOS_H
 
 // https://cdn.shopify.com/s/files/1/0570/1766/3541/files/X08H_V6.0_Technical_Specifcation.pdf?v=1700472376
 // https://kstservos.com/collections/glider-wing-servos/products/x08h-plus-horizontal-lug-servo-5-3kg-cm-0-09s-9-5g-8mm
 
+#define MIN_SERVO_ANGLE -60 // deg (unused except for internal angle2us mapping or manual trimming override because dangerous!)
+#define MAX_SERVO_ANGLE 60 // deg (unused except for internal angle2us mapping or manual trimming override because dangerous!)
 #define SERVO_MIN_ALLOWED -45
 #define SERVO_MAX_ALLOWED 45
 
