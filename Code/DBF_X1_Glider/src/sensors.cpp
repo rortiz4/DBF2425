@@ -196,7 +196,9 @@ void read_bno085(void* pvParameters) {
                         quat2eul(new_imu_data.rotation[0],new_imu_data.rotation[1],new_imu_data.rotation[2],new_imu_data.rotation[3],euler_vector,true);
                         new_imu_data.euler[0] = -euler_vector[0]; // Pitch
                         new_imu_data.euler[1] = euler_vector[1]; // Roll
-                        new_imu_data.euler[2] = -euler_vector[2]; // Yaw
+                        new_imu_data.euler[2] = -euler_vector[2]+180; // Yaw (normalized from 0 to 360)
+                        if (new_imu_data.euler[2] < 0) new_imu_data.euler[2] = 0;
+                        else if (new_imu_data.euler[2] > 360) new_imu_data.euler[2] = 360; // This matches GPS heading range.
 
                         read_count++;
                         rot_read = true;
