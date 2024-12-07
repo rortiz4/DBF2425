@@ -20,6 +20,6 @@ void init_queues() {
     GPS_Queue = xQueueCreate(1, sizeof(GPS_Data));
     Autopilot_Queue = xQueueCreate(1, sizeof(Autopilot_Data));
     Pitcheron_Queue = xQueueCreate(1, sizeof(Pitcheron_Data));
-
+    
     Flight_Data_Queue = xQueueCreate(1, sizeof(Flight_Data));
 }

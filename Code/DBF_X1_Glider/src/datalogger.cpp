@@ -30,7 +30,7 @@ void init_SD(bool serial_log, bool SD_log) {
     if (!log_to_SD) return;
     unsigned int file_counter = FILE_COUNT_START;        // Start the file counter at 1
     char filename[16];
-    Serial.print("Initializing SD Card...");
+    //Serial.print("Initializing SD Card...");
     pinMode(SD_CS, OUTPUT);
     digitalWrite(SD_CS, HIGH);
     mySPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
@@ -39,8 +39,8 @@ void init_SD(bool serial_log, bool SD_log) {
         Serial.println("Card failed, or not present. Retrying..."); // Retry if SD card can't be initialized
         delay(500);
     }
-    Serial.println("DONE!");
-    Serial.println("Searching for next available filename");
+    //Serial.println("DONE!");
+    //Serial.println("Searching for next available filename");
     // Get next filenumber for filename 
     sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
     while(SD.exists(filename)) { 
@@ -57,7 +57,7 @@ void init_SD(bool serial_log, bool SD_log) {
     datafile = SD.open(filename, FILE_WRITE);
     // Open File
     if (datafile) {
-        Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
+        //Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
     }
     else {
         Serial.printf("Failed to Open File: /data%03u.csv for writing!\n", file_counter);
@@ -71,21 +71,20 @@ void init_SD(bool serial_log, bool SD_log) {
     const char csv_header[] =   "Line_Num,ESP32_Time_s,ID0_IMU,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
                                 "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1_ASPD,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
                                 "ID2_GPS,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
-                                "ID3_AP,AP_Mode,AP_HDGSEL,AP_PITCH,"
-                                "ID4_SERVO,servo_L_angle,servo_R_angle,servo_angle_target,servo_action_target\n";
+                                "ID3_AP,Flight_Phase,AP_Mode,AP_HDG,AP_ROLL_TGT,AP_PITCH_TGT,"
+                                "ID4_SERVO,servo_L_angle,servo_R_angle,servo_Angle_TGT,servo_Action_TGT\n";
 
-    Serial.println("Writing .csv header:");
+    //Serial.println("Writing .csv header:");
     datafile.print(csv_header);
     datafile.flush(); 
     if (log_to_serial) {
         Serial.print(csv_header);
     }
-    Serial.println(".csv Header Writing DONE!");
+    //Serial.println(".csv Header Writing DONE!");
 }
 
 void log_data(void* pvParameters) {
     float current_time = 0;
-    pinMode(BUILTIN_LED_PIN, OUTPUT);
     IMU_Data imu;
     Airspeed_Data pitot;
     GPS_Data gps;
@@ -93,7 +92,6 @@ void log_data(void* pvParameters) {
     Autopilot_Data AP_data;
     Pitcheron_Data pitcherons;
     digitalWrite(BUILTIN_LED_PIN, LOW);
-    bool led_on = false;
     unsigned long line_num = LINE_NUM_START; // These are only initialized once
     while(true) {
         static unsigned long start_time = micros();
@@ -169,14 +167,14 @@ void log_data(void* pvParameters) {
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
 
             // Autopilot Data
-            datafile.printf("%u,%s,%.*f,%.*f,", AP_data.sensor_id, \
-            AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_pitch);
+            datafile.printf("%u,%s,%s,%.*f,%.*f,%.*f,", AP_data.sensor_id, AP_data.flight_phase, \
+            AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_roll, DP_DATA, AP_data.ap_target_pitch);
 
             // Servo Data
-            datafile.printf("%u,%d,%d,%d,%s\n", pitcherons.sensor_id, \
+            datafile.printf("%u,%d,%d,%u,%s\n", pitcherons.sensor_id, \
             pitcherons.raw_angle_l, \
             pitcherons.raw_angle_r, \
-            pitcherons.angle_target, \ 
+            pitcherons.angle_target, \
             pitcherons.action_target); // Do not use comma in action target String!
 
             datafile.flush();
@@ -225,14 +223,14 @@ void log_data(void* pvParameters) {
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
 
             // Autopilot Data
-            Serial.printf("%u,%s,%.*f,%.*f,", AP_data.sensor_id, \
-            AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_pitch);
+            Serial.printf("%u,%s,%.*f,%.*f,%.*f,", AP_data.sensor_id, AP_data.flight_phase, \
+            AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_roll, DP_DATA, AP_data.ap_target_pitch);
 
             // Servo Data
-            Serial.printf("%u,%d,%d,%d,%s\n", pitcherons.sensor_id, \
+            Serial.printf("%u,%d,%d,%u,%s\n", pitcherons.sensor_id, \
             pitcherons.raw_angle_l, \
             pitcherons.raw_angle_r, \
-            pitcherons.angle_target, \ 
+            pitcherons.angle_target, \
             pitcherons.action_target); // Do not use comma in action target String!
             
             // Serial.flush();
@@ -240,15 +238,13 @@ void log_data(void* pvParameters) {
 
         line_num++;
         // Resume suspended reading tasks after logging data to SD card and loop again.
-        if(led_on) {
-            led_on = false;
+        if(digitalRead(BUILTIN_LED_PIN) == HIGH) {
             digitalWrite(BUILTIN_LED_PIN, LOW);
         }
         else {
-            led_on = true;
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
-        //vTaskDelay(250/portTICK_PERIOD_MS); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
+        //vTaskDelay(pdMS_TO_TICKS(10)); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
         vTaskResume(read_gps_task);
         vTaskResume(read_imu_task);
         vTaskResume(read_pitot_task);

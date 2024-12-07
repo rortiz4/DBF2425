@@ -7,33 +7,25 @@
 #include "semaphores.h"
 /* Include Sensor Libraries */
 #include <Adafruit_BNO08x.h>
-//#include "ms4525do.h"
-#include "Honeywell_ABP.h"
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
-
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
+
+#define RHO 1.27287 //https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
 #define STARTUP_DELAY 5000 // x2
 #define I2C_BUS_SPEED 400000 // 100kHz Default
-#define MIN_AIRSPEED 5 // m/s (pitot reads 0 if under 5m/s due to inaccuracy)
+#define MIN_AIRSPEED 5*3.28084 // m/s (pitot reads 0 if under 5m/s due to inaccuracy)
 #define UTC_TIMEZONE_OFFSET -4 // EST is 4 hours behind UTC
 #define GPS_SAMPLE_RATE 25 // Hz (25Hz max)
 #define NMEA_BUFFER_SIZE 255
 #define INIT_DELAY 100
 
+
 /* Instantiate sensor classes and types */
 // BNO085
 Adafruit_BNO08x bno085(-1);
 sh2_SensorValue_t bno085_value;
-// MS4525DO
-// bfs::Ms4525do ms4525do;
-Honeywell_ABP abp(
-    0x28,   // I2C address
-    0,      // minimum pressure
-    1,      // maximum pressure
-    "psi"   // pressure unit
-);
 // GPS
 SFE_UBLOX_GNSS myGNSS;
 // Create buffer variables for NMEA Sentence Parsing
@@ -43,23 +35,25 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 // Initialize Serial and I2C hardware
 void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
-    Serial.begin(SERIAL_MONITOR_BAUDRATE);
+    //Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v1.0");
-    Serial.println("By Daniel Noronha & Ricky Ortiz");
-    Serial.println("Last Software Update: November 09, 2024");
-    Serial.println("Wish Me Luck!!!\n");
+    //Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v1.0");
+    //Serial.println("By Daniel Noronha & Ricky Ortiz");
+    //Serial.println("Last Software Update: November 09, 2024");
+    //Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
     Wire.begin(SDA_PIN, SCL_PIN);
     Wire.setClock(I2C_BUS_SPEED);
-    Serial.println("Serial IO & I2C Initialized Successfully!");
+    //Serial.println("Serial IO & I2C Initialized Successfully!");
+    pinMode(BUILTIN_LED_PIN, OUTPUT);
+    digitalWrite(BUILTIN_LED_PIN, LOW);
 }
 
 /* Sensor Initialization Functions */
 // IMU
 bool init_bno085() {
-    Serial.print("Initializing BNO085 IMU...");
+    //Serial.print("Initializing BNO085 IMU...");
     // Reports Available: SH2_ACCELEROMETER, SH2_GYROSCOPE_CALIBRATED, SH2_MAGNETIC_FIELD_CALIBRATED,
     // SH2_LINEAR_ACCELERATION, SH2_GRAVITY, SH2_ROTATION_VECTOR, SH2_GEOMAGNETIC_ROTATION_VECTOR,
     // SH2_GAME_ROTATION_VECTOR, SH2_STEP_COUNTER, SH2_STABILITY_CLASSIFIER, SH2_RAW_ACCELEROMETER,
@@ -89,29 +83,22 @@ bool init_bno085() {
         return false;
     }
 
-    Serial.println("DONE!");
+    //Serial.println("DONE!");
     return true;
 }
 
 // Differential Pressure Sensor (Pitot Tube Airspeed)
-bool init_ms4525do() {
-    Serial.print("Initializing MS4525DO Differential Pressure/Airspeed Sensor...");
-    // I2C address of 0x28, on bus 0, with a -1 to +1 PSI range for pressure transducer
-    //ms4525do.Config(&Wire, 0x28, 1.0f, -1.0f);
-    // Starting communication with the pressure transducer
-    //if (!ms4525do.Begin()) {
-    //    Serial.println("\nError communicating with sensor!");
-    //    return false;
-    //}
-    Serial.println("DONE!");
+bool init_abp2() {
+    //Serial.print("Initializing ABP2 Differential Pressure/Airspeed Sensor...");
+    //Serial.println("DONE!");
     return true;
 }
 
 bool init_gps() {
-    Serial.print("Initializing GPS...");
+    //Serial.print("Initializing GPS...");
     // Starting communication with GPS (assume default I2C Address)
     if (!myGNSS.begin()) {
-        Serial.println("\nError communicating with sensor!");
+        //Serial.println("\nError communicating with sensor!");
         return false;
     }
 
@@ -120,25 +107,25 @@ bool init_gps() {
     myGNSS.setProcessNMEAMask(SFE_UBLOX_FILTER_NMEA_GGA | SFE_UBLOX_FILTER_NMEA_RMC); // We only want GGA and RMC NMEA Messages, ignore others
     myGNSS.setNavigationFrequency(GPS_SAMPLE_RATE); // 5 Hz originally
 
-    Serial.println("DONE!");
+    //Serial.println("DONE!");
     return true;
 }
 
 void init_all_sensors() {
     while (!init_bno085()) {
         delay(INIT_DELAY);
-        Serial.println("BNO085 IMU INITIALIZATION FAILED. RETRYING...");
+        //Serial.println("BNO085 IMU INITIALIZATION FAILED. RETRYING...");
     }
 
-    while (!init_ms4525do()) {
+    while (!init_abp2()) {
         delay(INIT_DELAY);
-        Serial.println("MS4525DO DIFFERENTIAL PRESSURE SENSOR INITIALIZATION FAILED. RETRYING...");
+        //Serial.println("MS4525DO DIFFERENTIAL PRESSURE SENSOR INITIALIZATION FAILED. RETRYING...");
     }
     while(!init_gps()) {
         delay(INIT_DELAY);
-        Serial.println("GPS INITIALIZATION FAILED. RETRYING...");
+        //Serial.println("GPS INITIALIZATION FAILED. RETRYING...");
     }
-    Serial.println("All Sensors Initialized Successfully!");
+    //Serial.println("All Sensors Initialized Successfully!");
 }
 
 void quat2eul (float re, float i, float j, float k, float* euler_angles, bool degrees=true) {
@@ -265,31 +252,58 @@ void read_bno085(void* pvParameters) {
     }
 }
 
-// MS4525DO
-void read_ms4525do(void* pvParameters) {
+// ABP2DRRT001PD2A3XX
+void read_abp2(void* pvParameters) {
     // Initialize Airspeed_Data struct
     Airspeed_Data new_airspeed_data;
+    uint8_t id = 0x28; // i2c address
+    uint8_t data[7]; // holds output data
+    uint8_t cmd[3] = {0xAA, 0x00, 0x00}; // command to be sent
+
+    // float outside_temp = 32; // in farenheit
+    // float airpressure = 100000; // in pascals
+    // float dewpoint = 28; // in farenheit
+    // float relative_humidity = 0;
+
+    float outputmax = 15099494; // output at maximum pressure [counts]
+    float outputmin = 1677722; // output at minimum pressure [counts]
+    float pmax = 1; // maximum value of pressure range in psi
+    float pmin = -1; // minimum value of pressure range in psi
+    float PSI_to_pascal = 6894.7572931783;
+
+    float percentage = 0; // holds percentage of full scale data
+
     new_airspeed_data.sensor_id = 1;
     while(true) {
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
-        /*
-        if(!ms4525do.Read()) {
-            xSemaphoreGive(I2C_MUTEX);
-            continue;
+
+        Wire.beginTransmission(id);
+
+        int stat = Wire.write (cmd, 3); // write command to the sensor
+        stat |= Wire.endTransmission();
+        vTaskDelay(pdMS_TO_TICKS(10));
+        Wire.requestFrom(id, (uint8_t)7); // read back Sensor data 7 bytes
+        int i = 0;
+        for (i = 0; i < 7; i++) {
+            data [i] = Wire.read();
         }
-        */
-       abp.update();
-        float raw_diff_pressure = abp.pressure();
-        float temp_C = abp.temperature();
-        float raw_airspeed = 0;//ms4525do.aspeed() * 3.28084; // m/s to ft/s
 
         xSemaphoreGive(I2C_MUTEX);
 
-        //float corr_airspeed = (raw_airspeed < MIN_AIRSPEED) ? 0.0:raw_airspeed; // Based on Calibration (airspeed inaccurate below ~5m/s)
+        float press_counts = data[3] + data[2] * 256 + data[1] * 65536; // calculate digital pressure counts
+        float temp_counts = data[6] + data[5] * 256 + data[4] * 65536; // calculate digital temperature counts
+        float temp_C = (temp_counts * 200 / 16777215) - 50; // calculate temperature in deg c
 
+        //calculation of pressure value according to equation 2 of datasheet
+        float pressure_PSI = (((press_counts - outputmin) * (pmax - pmin)) / (outputmax - outputmin)) + pmin;
+        float raw_diff_pressure = -pressure_PSI * PSI_to_pascal;
+        float raw_airspeed = (sqrt(fabs(2 * raw_diff_pressure / RHO)))*3.28084;
+        if (raw_diff_pressure < 0) raw_airspeed *= -1;
+
+        float corr_airspeed = (raw_airspeed < MIN_AIRSPEED) ? 0.0:raw_airspeed; // Based on Calibration (airspeed inaccurate below ~5m/s)
         new_airspeed_data.diff_pressure = raw_diff_pressure;
-        new_airspeed_data.airspeed[0] = 0;//raw_airspeed;
-        new_airspeed_data.airspeed[1] = 0;//corr_airspeed;
+        new_airspeed_data.airspeed[0] = raw_airspeed;
+        new_airspeed_data.airspeed[1] = corr_airspeed;
         new_airspeed_data.temperature = temp_C;
 
         xQueueSend(Airspeed_Queue, &new_airspeed_data, portMAX_DELAY);
@@ -331,7 +345,7 @@ void read_gps(void* pvParameters) {
         }
         if (!first_fix) {
             first_fix = true;
-            Serial.printf("First GPS Fix Acquired! (in %f seconds)\n", ((float)micros())/1000000.0);
+            //Serial.printf("First GPS Fix Acquired! (in %f seconds)\n", ((float)micros())/1000000.0);
         }
         // Store NMEA parsed data (with consistent type-casting)
         uint8_t num_sats = nmea.getNumSatellites(); // Can be int but makes queue implementation much easier
@@ -382,8 +396,8 @@ void read_gps(void* pvParameters) {
 //a buffer, radio, etc.
 void SFE_UBLOX_GNSS::processNMEA(char incoming)
 {
-  //Take the incoming char from the u-blox I2C port and pass it on to the MicroNMEA lib
-  //for sentence cracking
-  nmea.process(incoming);
+    //Take the incoming char from the u-blox I2C port and pass it on to the MicroNMEA lib
+    //for sentence cracking
+    nmea.process(incoming);
 }
 

@@ -28,13 +28,13 @@ Servo left_servo;
 Servo right_servo;
 
 void init_servos_trim(void) {
-    Serial.println("Initializing Servos...");
+    //Serial.println("Initializing Servos...");
 	ESP32PWM::allocateTimer(0); // Allocate timer for both servos
     left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
     right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
     left_servo.attach(SERVO_L_PIN); // Attach left servo to pin
     right_servo.attach(SERVO_R_PIN); // Attach right servo to pin
-    Serial.println("Servo Initialization Complete. Start Trimming."); 
+    //Serial.println("Servo Initialization Complete. Start Trimming."); 
 }
 
 // This function maps angles to microseconds (PWM width) based on servo datasheet
@@ -54,7 +54,7 @@ void actuate_servo_r(int raw_angle_servo_r) {
 
 // This function initializes the servos, checks range of travel, and then centers servos
 void init_servos(bool actuation_test = true) {
-    Serial.println("Initializing Servos...");
+    //Serial.println("Initializing Servos...");
 	ESP32PWM::allocateTimer(0); // Allocate timer for both servos
     left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
     right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
@@ -62,71 +62,70 @@ void init_servos(bool actuation_test = true) {
     right_servo.attach(SERVO_R_PIN); // Attach right servo to pin
 
     // Set servos to 0 position
-    Serial.printf("Centering LEFT servo centered with trim @%ddeg.\n", RAW_TRIM_L);
+    //Serial.printf("Centering LEFT servo centered with trim @%ddeg.\n", RAW_TRIM_L);
     actuate_servo_l(RAW_TRIM_L+0);
-    Serial.printf("Centering RIGHT servo centered with trim @%ddeg.\n", RAW_TRIM_R);
+    //Serial.printf("Centering RIGHT servo centered with trim @%ddeg.\n", RAW_TRIM_R);
     actuate_servo_r(RAW_TRIM_R+0);
-    Serial.println("Servo Initialization Complete! Verify both pitcherons are now correctly trimmed/centered.");
-    if (CW_CONVENTION == -1) Serial.println("Note: Using alternate convention for angles (+ => counterclockwise, - => clockwise).");
-    else if (CW_CONVENTION != 1) Serial.println("INVALID CW_CONVENTION SPECIFIED! STOP! Roll control will be scaled incorrectly!");
+    //Serial.println("Servo Initialization Complete! Verify both pitcherons are now correctly trimmed/centered.");
+    //if (CW_CONVENTION == -1) Serial.println("Note: Using alternate convention for angles (+ => counterclockwise, - => clockwise).");
+    //else if (CW_CONVENTION != 1) Serial.println("INVALID CW_CONVENTION SPECIFIED! STOP! Roll control will be scaled incorrectly!");
     delay(ACTUATION_DELAY_ms);
-    Serial.println("Assuming SERVO_MIN_ALLOWED < 0 and SERVO_MAX_ALLOWED > 0");
+    //Serial.println("Assuming SERVO_MIN_ALLOWED < 0 and SERVO_MAX_ALLOWED > 0");
     if (actuation_test == true) {
-        Serial.println("Testing Servos... Observe movement carefully to verify correct actuation/response.");
+        //Serial.println("Testing Servos... Observe movement carefully to verify correct actuation/response.");
         // If both servos turn counterclockwise or clockwise, Pitcherons = Ailerons
         // If one turns clockwise and the other counterclockwise, Pitcherons = Elevator
 
         // Turn both servos in same direction (counterclockwise: counter-rotating pitcherons). Left pitcheron points down, right points up (roll left)
         actuate_servo_l(RAW_TRIM_L+(SERVO_MIN_ALLOWED*CW_CONVENTION));
         actuate_servo_r(RAW_TRIM_R+(SERVO_MIN_ALLOWED*CW_CONVENTION));
-        Serial.printf("Test #1/6: Confirm that LEFT pitcheron points DOWN and RIGHT pitcheron points UP (both@min allowed deflection = %ddeg).\n", SERVO_MIN_ALLOWED);
+        //Serial.printf("Test #1/6: Confirm that LEFT pitcheron points DOWN and RIGHT pitcheron points UP (both@min allowed deflection = %ddeg).\n", SERVO_MIN_ALLOWED);
         delay(ACTUATION_DELAY_ms);
 
         // Turn both servos in same direction (clockwise: counter-rotating pitcherons). Left pitcheron points up, Right points down (roll right)
         actuate_servo_l(RAW_TRIM_L+(SERVO_MAX_ALLOWED*CW_CONVENTION));
         actuate_servo_r(RAW_TRIM_R+(SERVO_MAX_ALLOWED*CW_CONVENTION));
-        Serial.printf("Test #2/6: Confirm that LEFT pitcheron points UP and RIGHT pitcheron points DOWN (both@max allowed deflection = %ddeg)\n.", SERVO_MAX_ALLOWED);
+        //Serial.printf("Test #2/6: Confirm that LEFT pitcheron points UP and RIGHT pitcheron points DOWN (both@max allowed deflection = %ddeg)\n.", SERVO_MAX_ALLOWED);
         delay(ACTUATION_DELAY_ms);
 
         // Center servos
         actuate_servo_l(RAW_TRIM_L+0);
         actuate_servo_r(RAW_TRIM_R+0);
-        Serial.printf("Test #3/6: Confirm that BOTH pitcherons are CENTERED (servo_l trim@%ddeg; servo_r trim@%ddeg).\n", RAW_TRIM_L, RAW_TRIM_R);
+        //Serial.printf("Test #3/6: Confirm that BOTH pitcherons are CENTERED (servo_l trim@%ddeg; servo_r trim@%ddeg).\n", RAW_TRIM_L, RAW_TRIM_R);
         delay(ACTUATION_DELAY_ms);
 
         // Turn servos in opposite directions (L: clockwise, R: counterclockwise). Left pitcheron points up, Right points up (pitch nose down/up)
         actuate_servo_l(RAW_TRIM_L+(SERVO_MAX_ALLOWED*CW_CONVENTION));
         actuate_servo_r(RAW_TRIM_R+(SERVO_MIN_ALLOWED*CW_CONVENTION));
-        Serial.println("Test #4/6: Confirm that BOTH pitcherons point UP (max deflection).");
-        if (CG_CONVENTION == 1) Serial.println("Pitcherons are BEHIND CG. Confirm this action causes NOSE PITCH DOWN.");
-        else if (CG_CONVENTION == -1) Serial.println("Pitcherons are IN FRONT OF CG. Confirm this action causes NOSE PITCH UP.");
-        else Serial.println("INVALID CG_CONVENTION SPECIFIED! STOP! There will be no pitch control in-flight (only roll)!");
+        //Serial.println("Test #4/6: Confirm that BOTH pitcherons point UP (max deflection).");
+        //if (CG_CONVENTION == 1) Serial.println("Pitcherons are BEHIND CG. Confirm this action causes NOSE PITCH DOWN.");
+        //else if (CG_CONVENTION == -1) Serial.println("Pitcherons are IN FRONT OF CG. Confirm this action causes NOSE PITCH UP.");
+        //else Serial.println("INVALID CG_CONVENTION SPECIFIED! STOP! There will be no pitch control in-flight (only roll)!");
         delay(ACTUATION_DELAY_ms);
 
         // Turn servos in opposite directions (L: counterclockwise, R: clockwise). Left pitcheron points down, Right points down (pitch nose up/down)
         actuate_servo_l(RAW_TRIM_L+(SERVO_MIN_ALLOWED*CW_CONVENTION));
         actuate_servo_r(RAW_TRIM_R+(SERVO_MAX_ALLOWED*CW_CONVENTION));
-        Serial.println("Test #5/6: Confirm that BOTH pitcherons point DOWN (max deflection).");
-        if (CG_CONVENTION == 1) Serial.println("Pitcherons are BEHIND CG. Confirm this action causes NOSE PITCH UP.");
-        else if (CG_CONVENTION == -1) Serial.println("Pitcherons are IN FRONT OF CG. Confirm this action causes NOSE PITCH DOWN.");
-        else Serial.println("INVALID CG_CONVENTION SPECIFIED! STOP! There will be no pitch control in-flight (only roll)!");
+        //Serial.println("Test #5/6: Confirm that BOTH pitcherons point DOWN (max deflection).");
+        //if (CG_CONVENTION == 1) Serial.println("Pitcherons are BEHIND CG. Confirm this action causes NOSE PITCH UP.");
+        //else if (CG_CONVENTION == -1) Serial.println("Pitcherons are IN FRONT OF CG. Confirm this action causes NOSE PITCH DOWN.");
+        //else Serial.println("INVALID CG_CONVENTION SPECIFIED! STOP! There will be no pitch control in-flight (only roll)!");
         delay(ACTUATION_DELAY_ms);
 
         // Center servos
         actuate_servo_l(RAW_TRIM_L+0);
         actuate_servo_r(RAW_TRIM_R+0);
-        Serial.printf("Test #6/6: Confirm that BOTH pitcherons are CENTERED (servo_l trim@%ddeg; servo_r trim@%ddeg).\n", RAW_TRIM_L, RAW_TRIM_R);
+        //Serial.printf("Test #6/6: Confirm that BOTH pitcherons are CENTERED (servo_l trim@%ddeg; servo_r trim@%ddeg).\n", RAW_TRIM_L, RAW_TRIM_R);
         delay(ACTUATION_DELAY_ms);
 
-        Serial.println("Servo Testing Complete! Verify both pitcherons are now correctly trimmed/centered.");
+        //Serial.println("Servo Testing Complete! Verify both pitcherons are now correctly trimmed/centered.");
     }
 
 
 }
 
 // This function actuates 2 servos using actuate_servo_l and actuate_servo_r. Specify ROLL_LEFT/ROLL_RIGHT/PITCH_NOSE_UP/PITCH_NOSE_DOWN or WINGS_LEVEL for act_type_direction.
-void actuate_pitcherons(int angle, enum Pitcheron_Actions act_type_direction) {
-    angle = abs(angle); // Ensure angle is positive always.
+void actuate_pitcherons(unsigned int angle, enum Pitcheron_Actions act_type_direction) {
     Pitcheron_Data new_pitcheron_data;
     new_pitcheron_data.sensor_id = 4;
     new_pitcheron_data.angle_target = angle;

@@ -13,6 +13,10 @@
 
 // Outputs (LEDs+Servos)
 #define BUILTIN_LED_PIN 2
+
+#define RELEASE_DET_PIN 19
+#define STROBE_LED_PIN 20
+
 // Separate left and right servo pin defs
 #define SERVO_L_PIN 13
 #define SERVO_R_PIN 14

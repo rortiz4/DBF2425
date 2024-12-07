@@ -19,7 +19,7 @@ enum Pitcheron_Actions {
 
 struct Pitcheron_Data {
     unsigned int sensor_id;
-    int angle_target; // absolute value only
+    unsigned int angle_target; // absolute value only
     const char* action_target; // e.g. WINGS_LEVEL, ROLL_RIGHT, etc.
     int raw_angle_l; // Angle including trim adjustments and CG/CW corrections (raw)
     int raw_angle_r; // Angle including trim adjustments and CG/CW corrections (raw)
@@ -33,5 +33,5 @@ void actuate_servo_r(int angle);
 void init_servos(bool actuation_test); // Use either init_servos or init_servos_trim in a program, but NOT BOTH.
 void init_servos_trim(void); // Do not use, except for in another program (not main()) exclusively to initialize for trimming individual servos.
 
-void actuate_pitcherons(int angle, enum Pitcheron_Actions act_type_direction); // Specify PITCH or ROLL with direction for actuation type + direction (both servos use same angle but potentially different trim offsets)
+void actuate_pitcherons(unsigned int angle, enum Pitcheron_Actions act_type_direction); // Specify PITCH or ROLL with direction for actuation type + direction (both servos use same angle but potentially different trim offsets)
 #endif

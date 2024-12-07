@@ -4,16 +4,41 @@
 // This struct will be used by datalogger
 struct Autopilot_Data {
     unsigned int sensor_id; // 4
+    const char* flight_phase;
     const char* ap_mode;
     float ap_target_bearing;
+    float ap_target_roll;
     float ap_target_pitch;
 };
 
+enum AP_Modes {
+    AP_OFF, // 0 (Almost never used except on ground)
+    AP_HDG_SEL_IMU, // 1
+    AP_HDG_SEL_GPS,
+    AP_SPD_TRIM,
+    AP_PITCH_FIXED,
+    AP_ROLL_FIXED,
+    AP_ENVELOPE_PROT // Flight envelope protection mode
+};
+
+enum Flight_Phases {
+    // Must always alternate between a Roll Mode and a Pitch Mode.
+    U_TURN_HDG, // Roll Mode: 180 degree turn after release
+    // Homing Mode TBD with working GPS
+    SPD_DESCENT, // Pitch Mode: Primary mode after U-Turn. Will alternate with U_Turn_HDG as needed.
+    LANDED // Used to turn off autopilot
+};
+
 void Autopilot_MASTER(void* pvParameters); // Calls on each of the below functions to perform manoeuvres as required. Maintains flight envelope protections too.
-void Autopilot_HDG_SEL_IMU(float yaw, float bearing_change, float max_target_dev); // Current bearing from IMU "Yaw" Angle. Servo actuation done to turn by bearing_change (e.g. 180degree turn)
-void Autopilot_OP_DES(float airspeed, float target_airspeed, float max_target_dev); // Controls pitch to maintain airspeed within +/-max_dev of target
-void Autopilot_HDG_SEL_GPS(float current_heading, float current_lat, float current_long, float target_lat, float target_long, float max_target_dev); // Current bearing from GPS+current+target coordinates (used to calculate target bearing for turn). Used after 180 degree turn for homing.
-void Autopilot_PITCH(float pitch, float target_pitch, float max_target_dev); // Will probably go unused, but included for completeness (direct pitch control by angle. Dangerous due to high stall potential! Good for levelling off.)
+bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilot_Data& AP_log_data); // Current bearing from IMU "Yaw" Angle. Servo actuation done to turn by bearing_change (e.g. 180degree turn)
+bool Autopilot_SPD_TRIM(float airspeed, float pitch, float target_airspeed, Autopilot_Data& AP_log_data); // Controls pitch to maintain airspeed within +/-max_dev of target.
+bool Autopilot_HDG_SEL_GPS(float roll, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data); // Current bearing from GPS+current+target coordinates (used to calculate target bearing for turn). Used after 180 degree turn for homing.
+bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopilot_Data& AP_log_data);
+
+// Unused in AP_MASTER
+bool Autopilot_ROLL_FIXED(float roll, float target_roll, Autopilot_Data& AP_log_data); // Will probably go unused, but included for completeness (direct roll control by angle.
+bool Autopilot_PITCH_FIXED(float pitch, float target_pitch, Autopilot_Data& AP_log_data); // Will probably go unused, but included for completeness (direct pitch control by angle. Dangerous due to high stall potential! Good for levelling off.)
+
 // Note: max_dev is allowed tolerance in each case for bearing/airspeed/pitch from target
 
 #endif
