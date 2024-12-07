@@ -9,7 +9,7 @@
 void init_strobe() {
     pinMode(STROBE_LED_PIN, OUTPUT);
     digitalWrite(STROBE_LED_PIN, LOW);
-    //Serial.println("Strobe LED Initialized.");
+    Serial.println("Strobe LED Initialized.");
 }
 
 void blink_strobe(void* pvParameters) {

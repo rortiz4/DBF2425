@@ -28,7 +28,7 @@ void init_tasks() {
         CPU1 // CPU 1 - Logging can happen independently of data collection to speed things up (separate processor)
     );
 
-    //Serial.println("SD Logging Task Started");
+    Serial.println("SD Logging Task Started");
 
     xTaskCreatePinnedToCore(
         read_gps,
@@ -40,7 +40,7 @@ void init_tasks() {
         CPU0 // CPU 0 (All sensors on same core since MUTEX needed for I2C bus anyway, also same priority.)
     );
 
-    //Serial.println("GPS Data Logging Task Started");
+    Serial.println("GPS Data Logging Task Started");
 
     xTaskCreatePinnedToCore(
         read_bno085,
@@ -52,7 +52,7 @@ void init_tasks() {
         CPU0
     );
 
-    //Serial.println("IMU Data Logging Task Started");
+    Serial.println("IMU Data Logging Task Started");
 
     xTaskCreatePinnedToCore(
         read_abp2,
@@ -64,7 +64,7 @@ void init_tasks() {
         CPU0
     );
 
-    //Serial.println("Pitot Tube Reading Task Started");
+    Serial.println("Pitot Tube Reading Task Started");
 
     xTaskCreatePinnedToCore(
         Autopilot_MASTER,
@@ -76,7 +76,7 @@ void init_tasks() {
         CPU1
     );
 
-    //Serial.println("Autopilot Task Started");
+    Serial.println("Autopilot Task Started");
 
     xTaskCreatePinnedToCore(
         blink_strobe,
@@ -88,5 +88,5 @@ void init_tasks() {
         CPU1
     );
 
-    //Serial.println("Strobe Light Blinking Task Started");
+    Serial.println("Strobe Light Blinking Task Started");
 }

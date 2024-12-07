@@ -14,19 +14,25 @@ struct Autopilot_Data {
 enum AP_Modes {
     AP_OFF, // 0 (Almost never used except on ground)
     AP_HDG_SEL_IMU, // 1
-    AP_HDG_SEL_GPS,
+    AP_HDG_SEL_GPS, // 2...
     AP_SPD_TRIM,
     AP_PITCH_FIXED,
     AP_ROLL_FIXED,
-    AP_ENVELOPE_PROT // Flight envelope protection mode
+    AP_ENVELOPE_PROT, // Flight envelope protection modes below (AP_ENVELOPE_PROT specifically not logged. See below for logged modes.)
+    AP_PROT_ROLL_MIN,
+    AP_PROT_ROLL_MAX,
+    AP_PROT_PITCH_MIN,
+    AP_PROT_PITCH_MAX,
+    AP_PROT_STALL,
+    AP_PROT_OVERSPEED
 };
 
 enum Flight_Phases {
     // Must always alternate between a Roll Mode and a Pitch Mode.
-    U_TURN_HDG, // Roll Mode: 180 degree turn after release
-    // Homing Mode TBD with working GPS
-    SPD_DESCENT, // Pitch Mode: Primary mode after U-Turn. Will alternate with U_Turn_HDG as needed.
-    LANDED // Used to turn off autopilot
+    U_TURN_HDG, // Roll Mode: 180 degree turn after release using IMU only 
+    GPS_HOMING, // TBD Roll Mode: Continuous update of target bearing + bearing correction from current GPS coordinates + COG/heading. Target coordinates hard-coded. Same logic as U_TURN_HDG flight phase after that.
+    SPD_DESCENT, // Pitch Mode: Primary mode after U-Turn. Will alternate with U_Turn_HDG/GPS_HOMING as needed (common to both roll modes).
+    LANDED // Used to return pitcherons to neutral position and turn off autopilot after landing.
 };
 
 void Autopilot_MASTER(void* pvParameters); // Calls on each of the below functions to perform manoeuvres as required. Maintains flight envelope protections too.

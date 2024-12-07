@@ -30,7 +30,7 @@ void init_SD(bool serial_log, bool SD_log) {
     if (!log_to_SD) return;
     unsigned int file_counter = FILE_COUNT_START;        // Start the file counter at 1
     char filename[16];
-    //Serial.print("Initializing SD Card...");
+    Serial.print("Initializing SD Card...");
     pinMode(SD_CS, OUTPUT);
     digitalWrite(SD_CS, HIGH);
     mySPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
@@ -39,8 +39,8 @@ void init_SD(bool serial_log, bool SD_log) {
         Serial.println("Card failed, or not present. Retrying..."); // Retry if SD card can't be initialized
         delay(500);
     }
-    //Serial.println("DONE!");
-    //Serial.println("Searching for next available filename");
+    Serial.println("DONE!");
+    Serial.println("Searching for next available filename");
     // Get next filenumber for filename 
     sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
     while(SD.exists(filename)) { 
@@ -57,7 +57,7 @@ void init_SD(bool serial_log, bool SD_log) {
     datafile = SD.open(filename, FILE_WRITE);
     // Open File
     if (datafile) {
-        //Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
+        Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
     }
     else {
         Serial.printf("Failed to Open File: /data%03u.csv for writing!\n", file_counter);
@@ -74,13 +74,13 @@ void init_SD(bool serial_log, bool SD_log) {
                                 "ID3_AP,Flight_Phase,AP_Mode,AP_HDG,AP_ROLL_TGT,AP_PITCH_TGT,"
                                 "ID4_SERVO,servo_L_angle,servo_R_angle,servo_Angle_TGT,servo_Action_TGT\n";
 
-    //Serial.println("Writing .csv header:");
+    Serial.println("Writing .csv header:");
     datafile.print(csv_header);
     datafile.flush(); 
     if (log_to_serial) {
         Serial.print(csv_header);
     }
-    //Serial.println(".csv Header Writing DONE!");
+    Serial.println(".csv Header Writing DONE!");
 }
 
 void log_data(void* pvParameters) {

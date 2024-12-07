@@ -10,7 +10,7 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define RHO 1.27287 //https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define RHO 1.27287 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
 #define STARTUP_DELAY 5000 // x2
@@ -35,17 +35,17 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 // Initialize Serial and I2C hardware
 void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
-    //Serial.begin(SERIAL_MONITOR_BAUDRATE);
+    Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    //Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v1.0");
-    //Serial.println("By Daniel Noronha & Ricky Ortiz");
-    //Serial.println("Last Software Update: November 09, 2024");
-    //Serial.println("Wish Me Luck!!!\n");
+    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v2.0");
+    Serial.println("By Daniel Noronha & Ricky Ortiz");
+    Serial.println("Last Software Update: December 07, 2024");
+    Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
     Wire.begin(SDA_PIN, SCL_PIN);
     Wire.setClock(I2C_BUS_SPEED);
-    //Serial.println("Serial IO & I2C Initialized Successfully!");
+    Serial.println("Serial IO & I2C Initialized Successfully!");
     pinMode(BUILTIN_LED_PIN, OUTPUT);
     digitalWrite(BUILTIN_LED_PIN, LOW);
 }
@@ -53,7 +53,7 @@ void init_low_level_hw() {
 /* Sensor Initialization Functions */
 // IMU
 bool init_bno085() {
-    //Serial.print("Initializing BNO085 IMU...");
+    Serial.print("Initializing BNO085 IMU...");
     // Reports Available: SH2_ACCELEROMETER, SH2_GYROSCOPE_CALIBRATED, SH2_MAGNETIC_FIELD_CALIBRATED,
     // SH2_LINEAR_ACCELERATION, SH2_GRAVITY, SH2_ROTATION_VECTOR, SH2_GEOMAGNETIC_ROTATION_VECTOR,
     // SH2_GAME_ROTATION_VECTOR, SH2_STEP_COUNTER, SH2_STABILITY_CLASSIFIER, SH2_RAW_ACCELEROMETER,
@@ -83,22 +83,22 @@ bool init_bno085() {
         return false;
     }
 
-    //Serial.println("DONE!");
+    Serial.println("DONE!");
     return true;
 }
 
 // Differential Pressure Sensor (Pitot Tube Airspeed)
 bool init_abp2() {
-    //Serial.print("Initializing ABP2 Differential Pressure/Airspeed Sensor...");
-    //Serial.println("DONE!");
+    Serial.print("Initializing ABP2 Differential Pressure/Airspeed Sensor...");
+    Serial.println("DONE!");
     return true;
 }
 
 bool init_gps() {
-    //Serial.print("Initializing GPS...");
+    Serial.print("Initializing GPS...");
     // Starting communication with GPS (assume default I2C Address)
     if (!myGNSS.begin()) {
-        //Serial.println("\nError communicating with sensor!");
+        Serial.println("\nError communicating with sensor!");
         return false;
     }
 
@@ -107,25 +107,25 @@ bool init_gps() {
     myGNSS.setProcessNMEAMask(SFE_UBLOX_FILTER_NMEA_GGA | SFE_UBLOX_FILTER_NMEA_RMC); // We only want GGA and RMC NMEA Messages, ignore others
     myGNSS.setNavigationFrequency(GPS_SAMPLE_RATE); // 5 Hz originally
 
-    //Serial.println("DONE!");
+    Serial.println("DONE!");
     return true;
 }
 
 void init_all_sensors() {
     while (!init_bno085()) {
         delay(INIT_DELAY);
-        //Serial.println("BNO085 IMU INITIALIZATION FAILED. RETRYING...");
+        Serial.println("BNO085 IMU INITIALIZATION FAILED. RETRYING...");
     }
 
     while (!init_abp2()) {
         delay(INIT_DELAY);
-        //Serial.println("MS4525DO DIFFERENTIAL PRESSURE SENSOR INITIALIZATION FAILED. RETRYING...");
+        Serial.println("MS4525DO DIFFERENTIAL PRESSURE SENSOR INITIALIZATION FAILED. RETRYING...");
     }
     while(!init_gps()) {
         delay(INIT_DELAY);
-        //Serial.println("GPS INITIALIZATION FAILED. RETRYING...");
+        Serial.println("GPS INITIALIZATION FAILED. RETRYING...");
     }
-    //Serial.println("All Sensors Initialized Successfully!");
+    Serial.println("All Sensors Initialized Successfully!");
 }
 
 void quat2eul (float re, float i, float j, float k, float* euler_angles, bool degrees=true) {
@@ -345,7 +345,7 @@ void read_gps(void* pvParameters) {
         }
         if (!first_fix) {
             first_fix = true;
-            //Serial.printf("First GPS Fix Acquired! (in %f seconds)\n", ((float)micros())/1000000.0);
+            Serial.printf("First GPS Fix Acquired! (in %f seconds)\n", ((float)micros())/1000000.0);
         }
         // Store NMEA parsed data (with consistent type-casting)
         uint8_t num_sats = nmea.getNumSatellites(); // Can be int but makes queue implementation much easier
