@@ -38,7 +38,7 @@ enum Flight_Phases {
 void Autopilot_MASTER(void* pvParameters); // Calls on each of the below functions to perform manoeuvres as required. Maintains flight envelope protections too.
 bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilot_Data& AP_log_data); // Current bearing from IMU "Yaw" Angle. Servo actuation done to turn by bearing_change (e.g. 180degree turn)
 bool Autopilot_SPD_TRIM(float airspeed, float pitch, float target_airspeed, Autopilot_Data& AP_log_data); // Controls pitch to maintain airspeed within +/-max_dev of target.
-bool Autopilot_HDG_SEL_GPS(float roll, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data); // Current bearing from GPS+current+target coordinates (used to calculate target bearing for turn). Used after 180 degree turn for homing.
+bool Autopilot_HDG_SEL_GPS(float roll, float yaw, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data); // Current bearing from GPS+current+target coordinates (used to calculate target bearing for turn). Used after 180 degree turn for homing.
 bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopilot_Data& AP_log_data);
 
 // Unused in AP_MASTER

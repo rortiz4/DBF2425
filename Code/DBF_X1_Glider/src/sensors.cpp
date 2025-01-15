@@ -37,9 +37,9 @@ void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
     Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v2.0");
+    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v2.1");
     Serial.println("By Daniel Noronha & Ricky Ortiz");
-    Serial.println("Last Software Update: December 07, 2024");
+    Serial.println("Last Software Update: January 14, 2025");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
