@@ -85,7 +85,7 @@ void init_servos(bool actuation_test = true) {
         // Turn both servos in same direction (clockwise: counter-rotating pitcherons). Left pitcheron points up, Right points down (roll right)
         actuate_servo_l(RAW_TRIM_L+(SERVO_MAX_ALLOWED*CW_CONVENTION));
         actuate_servo_r(RAW_TRIM_R+(SERVO_MAX_ALLOWED*CW_CONVENTION));
-        Serial.printf("Test #2/6: Confirm that LEFT pitcheron points UP and RIGHT pitcheron points DOWN (both@max allowed deflection = %ddeg)\n.", SERVO_MAX_ALLOWED);
+        Serial.printf("Test #2/6: Confirm that LEFT pitcheron points UP and RIGHT pitcheron points DOWN (both@max allowed deflection = %ddeg).\n", SERVO_MAX_ALLOWED);
         delay(ACTUATION_DELAY_ms);
 
         // Center servos
@@ -129,6 +129,9 @@ void actuate_pitcherons(unsigned int angle, enum Pitcheron_Actions act_type_dire
     Pitcheron_Data new_pitcheron_data;
     new_pitcheron_data.sensor_id = 4;
     new_pitcheron_data.angle_target = angle;
+    new_pitcheron_data.raw_angle_l = RAW_TRIM_L+0;
+    new_pitcheron_data.raw_angle_r = RAW_TRIM_R+0;
+    new_pitcheron_data.action_target = "MAINTAIN_ANGLE";
     switch(act_type_direction) {
         case WINGS_LEVEL:
             // Angle ignored (same as doing any action with angle=0)
@@ -169,6 +172,9 @@ void actuate_pitcherons(unsigned int angle, enum Pitcheron_Actions act_type_dire
             new_pitcheron_data.action_target = "PITCH_NOSE_DOWN";
             new_pitcheron_data.raw_angle_l = RAW_TRIM_L+(angle*CW_CONVENTION*CG_CONVENTION);
             new_pitcheron_data.raw_angle_r = RAW_TRIM_R-(angle*CW_CONVENTION*CG_CONVENTION); 
+            break;
+        case MAINTAIN_ANGLE:
+            new_pitcheron_data.action_target = "MAINTAIN_ANGLE";
             break;
         default:
             // Just center and do nothing else (same as WINGS_LEVEL).

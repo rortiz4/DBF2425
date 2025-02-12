@@ -23,7 +23,7 @@ void init_tasks() {
         "Task to log Data to SD Card",
         COMMON_STACK_SIZE,
         NULL,
-        1,
+        2,
         &log_data_task,
         CPU1 // CPU 1 - Logging can happen independently of data collection to speed things up (separate processor)
     );
@@ -81,7 +81,7 @@ void init_tasks() {
     xTaskCreatePinnedToCore(
         blink_strobe,
         "Strobe Light Blinking Task",
-        4096,
+        COMMON_STACK_SIZE,
         NULL,
         1,
         &strobe_task,

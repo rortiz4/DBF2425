@@ -4,19 +4,21 @@
 #include "pitcheron_servos.h"
 
 #define AP_ENABLE true // Set true to enable Autopilot, false to disable.
+#define GND_TEST true // Disables LANDED state
+#define ROLL_PROT_EN true
+#define PITCH_PROT_EN true
+#define STALL_PROT_EN false
+#define OVSPD_PROT_EN true
 
 // Note: Convention used by autopilot: + means right/up, - means left/down. ALL ANGLES IN DEGREES AND SPEEDS IN ft/s.
 // Flight Envelope Limits
+#define MAX_PITCHERON_ANGLE 40
 #define STALL_SPEED 10
 #define OVERSPEED 150
 #define ROLL_LIM_MIN -30
 #define ROLL_LIM_MAX 30
 #define PITCH_LIM_MIN -20
 #define PITCH_LIM_MAX 20
-#define ROLL_PROT_EN true
-#define PITCH_PROT_EN true
-#define STALL_PROT_EN true
-#define OVSPD_PROT_EN true
 
 // Autopilot Settings and Control Limits
 #define U_TURN_BEARING_CHANGE -180 // deg: From DBF 2024 Competition Rules
@@ -95,23 +97,26 @@ void Autopilot_MASTER(void* pvParameters) {
     int ap_flight_phase = U_TURN_HDG;
     AP_log_data.flight_phase = "U_TURN_HDG";
     AP_log_data.ap_mode = "AP_OFF";
-    static bool u_turn_done = false;
+    bool u_turn_done = false;
     AP_log_data.ap_target_bearing = 0; // just for initialization
     AP_log_data.ap_target_roll = 0; // just for initialization
     AP_log_data.ap_target_pitch = 0; // just for initialization
     if (AP_ENABLE) Serial.println("Autopilot ON!");
     else Serial.println("Autopilot OFF. Maintaining Pitcheron Neutral Position.");
     while(true) {
+        //Serial.println("Autopilot Task");
         xQueueReceive(Flight_Data_Queue, &sensor_data, portMAX_DELAY);
         // First use the received data to identify the current phase of flight and AP Mode. But we start with U-Turn immediately
         // Landed
-        if (!AP_ENABLE); // Do nothing if AP has been disabled through flag.
-        else if (sensor_data.airspeed == 0) {
+        if (!AP_ENABLE) {
+            actuate_pitcherons(0, MAINTAIN_ANGLE); // Do nothing if AP has been disabled through flag.
+        }
+        else if (sensor_data.airspeed == 0 && !GND_TEST) {
             actuate_pitcherons(0, WINGS_LEVEL);
             AP_log_data.flight_phase = "LANDED";
             AP_log_data.ap_mode = "AP_OFF";
         }
-        else if ((ap_flight_phase == U_TURN_HDG) && !u_turn_done) { // && !u_turn_done
+        else if ((ap_flight_phase == U_TURN_HDG) && !u_turn_done) {
             AP_log_data.flight_phase = "U_TURN_HDG";
             // Always verify flight envelope first
             if (Autopilot_FLT_ENVELOPE_PROT(sensor_data.roll, sensor_data.pitch, sensor_data.airspeed, AP_log_data)) {
@@ -139,8 +144,8 @@ void Autopilot_MASTER(void* pvParameters) {
                 }
             }
         }
-        
         xQueueSend(Autopilot_Queue, &AP_log_data, portMAX_DELAY);
+        vTaskSuspend(NULL);
     }
 }
 
@@ -161,15 +166,34 @@ bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilo
         AP_log_data.ap_target_roll = 0;
         // Verify that roll also within desired envelope for 0 bearing correction
         if ((target_roll-roll >= ROLL_TARGET_DEVIATION_LOW) && (target_roll-roll <= ROLL_TARGET_DEVIATION_HIGH)) {
+            actuate_pitcherons(0, MAINTAIN_ANGLE);
             return true; // Don't do anything (Handover to AP_SPD_TRIM)
         }
         // Second case: Flight within desired envelope for bearing but not for roll
         else {
             // Could be greatly simplified to wings level, but doing this initially to match third case
             pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
-            if (target_roll-roll < ROLL_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, ROLL_LEFT); // Slight left turn needed
-            else if (target_roll-roll > ROLL_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, ROLL_RIGHT); // Slight right turn needed
-            else;
+            if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+            if (target_roll - roll > ROLL_TARGET_DEVIATION_HIGH) {
+                // Roll is too low (aircraft is banking too much to the right), correct right
+                actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+            } 
+            else if (target_roll - roll < -ROLL_TARGET_DEVIATION_HIGH) {
+                // Roll is too high (aircraft is banking too much to the left), correct left
+                actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+            } 
+            else if (target_roll - roll > -ROLL_TARGET_DEVIATION_LOW) {
+                // Roll is slightly low, apply small correction right
+                actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+            } 
+            else if (target_roll - roll < ROLL_TARGET_DEVIATION_LOW) {
+                // Roll is slightly high, apply small correction left
+                actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+            } 
+            else {
+                // Roll is within the acceptable range, no correction needed
+                actuate_pitcherons(0, MAINTAIN_ANGLE);
+            }
             // return false; (by fall through)
         }
     }
@@ -178,9 +202,28 @@ bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilo
         // Figure out whether left or right turn is needed
         // Left Turn Needed = Roll Left
         pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
-        if (target_roll-roll < ROLL_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, ROLL_LEFT); // Slight left turn needed
-        else if (target_roll-roll > ROLL_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, ROLL_RIGHT); // Slight right turn needed
-        else;
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+        if (target_roll - roll > ROLL_TARGET_DEVIATION_HIGH) {
+            // Roll is too low (aircraft is banking too much to the right), correct right
+            actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+        } 
+        else if (target_roll - roll < -ROLL_TARGET_DEVIATION_HIGH) {
+            // Roll is too high (aircraft is banking too much to the left), correct left
+            actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+        } 
+        else if (target_roll - roll > -ROLL_TARGET_DEVIATION_LOW) {
+            // Roll is slightly low, apply small correction right
+            actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+        } 
+        else if (target_roll - roll < ROLL_TARGET_DEVIATION_LOW) {
+            // Roll is slightly high, apply small correction left
+            actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+        } 
+        else {
+            // Roll is within the acceptable range, no correction needed
+            actuate_pitcherons(0, MAINTAIN_ANGLE);
+        }
+
     }
     return false;
 }
@@ -202,15 +245,34 @@ bool Autopilot_HDG_SEL_GPS(float roll, float yaw, float current_heading, float c
         AP_log_data.ap_target_roll = 0;
         // Verify that roll also within desired envelope for 0 bearing correction
         if ((target_roll-roll >= ROLL_TARGET_DEVIATION_LOW) && (target_roll-roll <= ROLL_TARGET_DEVIATION_HIGH)) {
+            actuate_pitcherons(0, MAINTAIN_ANGLE);
             return true; // Don't do anything (Handover to AP_SPD_TRIM)
         }
         // Second case: Flight within desired envelope for bearing but not for roll
         else {
             // Could be greatly simplified to wings level, but doing this initially to match third case
             pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
-            if (target_roll-roll < ROLL_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, ROLL_LEFT); // Slight left turn needed
-            else if (target_roll-roll > ROLL_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, ROLL_RIGHT); // Slight right turn needed
-            else;
+            if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+            if (target_roll - roll > ROLL_TARGET_DEVIATION_HIGH) {
+                // Roll is too low (aircraft is banking too much to the right), correct right
+                actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+            } 
+            else if (target_roll - roll < -ROLL_TARGET_DEVIATION_HIGH) {
+                // Roll is too high (aircraft is banking too much to the left), correct left
+                actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+            } 
+            else if (target_roll - roll > -ROLL_TARGET_DEVIATION_LOW) {
+                // Roll is slightly low, apply small correction right
+                actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+            } 
+            else if (target_roll - roll < ROLL_TARGET_DEVIATION_LOW) {
+                // Roll is slightly high, apply small correction left
+                actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+            } 
+            else {
+                // Roll is within the acceptable range, no correction needed
+                actuate_pitcherons(0, MAINTAIN_ANGLE);
+            }
             // return false; (by fall through)
         }
     }
@@ -219,9 +281,28 @@ bool Autopilot_HDG_SEL_GPS(float roll, float yaw, float current_heading, float c
         // Figure out whether left or right turn is needed
         // Left Turn Needed = Roll Left
         pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
-        if (target_roll-roll < ROLL_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, ROLL_LEFT); // Slight left turn needed
-        else if (target_roll-roll > ROLL_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, ROLL_RIGHT); // Slight right turn needed
-        else;
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+        if (target_roll - roll > ROLL_TARGET_DEVIATION_HIGH) {
+            // Roll is too low (aircraft is banking too much to the right), correct right
+            actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+        } 
+        else if (target_roll - roll < -ROLL_TARGET_DEVIATION_HIGH) {
+            // Roll is too high (aircraft is banking too much to the left), correct left
+            actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+        } 
+        else if (target_roll - roll > -ROLL_TARGET_DEVIATION_LOW) {
+            // Roll is slightly low, apply small correction right
+            actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+        } 
+        else if (target_roll - roll < ROLL_TARGET_DEVIATION_LOW) {
+            // Roll is slightly high, apply small correction left
+            actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+        } 
+        else {
+            // Roll is within the acceptable range, no correction needed
+            actuate_pitcherons(0, MAINTAIN_ANGLE);
+        }
+
     }
     return false;
 }
@@ -240,14 +321,18 @@ bool Autopilot_SPD_TRIM(float airspeed, float pitch, float target_airspeed, Auto
         AP_log_data.ap_target_pitch = 0;
         // Verify that pitch also within desired envelope for 0 airspeed correction
         if ((target_pitch-pitch >= PITCH_TARGET_DEVIATION_LOW) && (target_pitch-pitch <= PITCH_TARGET_DEVIATION_HIGH)) {
+            actuate_pitcherons(0, MAINTAIN_ANGLE);
             return true; // Don't do anything (handover to AP_HDG_SEL_IMU)
         }
         // Second case: Flight within desired envelope for speed but not for pitch
         else {
             pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
-            if (target_pitch-pitch < PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
-            else if (target_pitch-pitch > PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
-            else;
+            if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+            if (target_pitch-pitch > PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
+            else if (target_pitch-pitch < -PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
+            else if (target_pitch-pitch > -PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
+            else if (target_pitch-pitch < PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
+            else actuate_pitcherons(0, MAINTAIN_ANGLE);
         }
     }
     // Third case: Flight outside of envelope for speed (pitch envelope irrelevant)
@@ -255,9 +340,12 @@ bool Autopilot_SPD_TRIM(float airspeed, float pitch, float target_airspeed, Auto
         // Figure out whether pitch up or pitch down is needed
         // Pitch Up Needed = PITCH_NOSE_UP
         pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
-        if (target_pitch-pitch < PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
-        else if (target_pitch-pitch > PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
-        else;
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+        if (target_pitch-pitch > PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
+        else if (target_pitch-pitch < -PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
+        else if (target_pitch-pitch > -PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
+        else if (target_pitch-pitch < PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
+        else actuate_pitcherons(0, MAINTAIN_ANGLE);
     }
     return false;
 }
@@ -271,21 +359,24 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         AP_log_data.ap_mode = "AP_PROT_ROLL_MIN";
         float target_roll = ROLL_LIM_MAX;
         AP_log_data.ap_target_roll = target_roll;
-        float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll))); 
+        float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
     }
     else if ((roll > ROLL_LIM_MAX) && ROLL_PROT_EN) {
         AP_log_data.ap_mode = "AP_PROT_ROLL_MAX";
         float target_roll = ROLL_LIM_MIN;
         AP_log_data.ap_target_roll = target_roll;
-        float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll))); 
-        actuate_pitcherons(pitcheron_angle, ROLL_LEFT); // Ignored
+        float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+        actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
     }
     else if ((pitch < PITCH_LIM_MIN) && PITCH_PROT_EN) {
         AP_log_data.ap_mode = "AP_PROT_PITCH_MIN";
         float target_pitch = PITCH_LIM_MAX;
         AP_log_data.ap_target_pitch = target_pitch;
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
     }
     else if ((pitch > PITCH_LIM_MAX) && PITCH_PROT_EN) {
@@ -293,6 +384,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         float target_pitch = PITCH_LIM_MIN;
         AP_log_data.ap_target_pitch = target_pitch;
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
     }
     else if ((airspeed < STALL_SPEED) && STALL_PROT_EN) {
@@ -301,6 +393,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         float target_pitch = PITCH_LIM_MIN;
         AP_log_data.ap_target_pitch = target_pitch;
         unsigned int pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
     }
     else if ((airspeed > OVERSPEED) && OVSPD_PROT_EN) {
@@ -309,6 +402,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         float target_pitch = PITCH_LIM_MAX;
         AP_log_data.ap_target_pitch = target_pitch;
         unsigned int pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
     }
     else return true;
@@ -321,16 +415,33 @@ bool Autopilot_ROLL_FIXED(float roll, float target_roll, Autopilot_Data& AP_log_
     if (target_roll < ROLL_LIM_MIN) target_roll = ROLL_LIM_MIN;
     else if (target_roll > ROLL_LIM_MAX) target_roll = ROLL_LIM_MAX;
     if ((target_roll-roll >= ROLL_TARGET_DEVIATION_LOW) && (target_roll-roll <= ROLL_TARGET_DEVIATION_HIGH)) {
+        actuate_pitcherons(0, MAINTAIN_ANGLE);
         return true; // Don't do anything (Handover to AP_SPD_TRIM)
     }
     // Second case: Flight within desired envelope for bearing but not for roll
     else {
-        // Could be greatly simplified to wings level, but doing this initially to match third case
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
-        if (target_roll-roll < ROLL_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, ROLL_LEFT); // Slight left turn needed
-        else if (target_roll-roll > ROLL_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, ROLL_RIGHT); // Slight right turn needed
-        else;
-        // return false; (by fall through)
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+        if (target_roll - roll > ROLL_TARGET_DEVIATION_HIGH) {
+            // Roll is too low (aircraft is banking too much to the right), correct right
+            actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+        } 
+        else if (target_roll - roll < -ROLL_TARGET_DEVIATION_HIGH) {
+            // Roll is too high (aircraft is banking too much to the left), correct left
+            actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+        } 
+        else if (target_roll - roll > -ROLL_TARGET_DEVIATION_LOW) {
+            // Roll is slightly low, apply small correction right
+            actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
+        } 
+        else if (target_roll - roll < ROLL_TARGET_DEVIATION_LOW) {
+            // Roll is slightly high, apply small correction left
+            actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
+        } 
+        else {
+            // Roll is within the acceptable range, no correction needed
+            actuate_pitcherons(0, MAINTAIN_ANGLE);
+        }
     }
     return false;
 }
@@ -341,13 +452,17 @@ bool Autopilot_PITCH_FIXED(float pitch, float target_pitch, Autopilot_Data& AP_l
     else if (target_pitch > PITCH_LIM_MAX) target_pitch = PITCH_LIM_MAX;
     AP_log_data.ap_target_pitch = target_pitch;
     if ((target_pitch-pitch >= PITCH_TARGET_DEVIATION_LOW) && (target_pitch-pitch <= PITCH_TARGET_DEVIATION_HIGH)) {
+        actuate_pitcherons(0, MAINTAIN_ANGLE);
         return true; // Don't do anything (handover to AP_HDG_SEL_IMU)
     } 
     else {
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
-        if (target_pitch-pitch < PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
-        else if (target_pitch-pitch > PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
-        else;
+        if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
+        if (target_pitch-pitch > PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
+        else if (target_pitch-pitch < -PITCH_TARGET_DEVIATION_HIGH) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
+        else if (target_pitch-pitch > -PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
+        else if (target_pitch-pitch < PITCH_TARGET_DEVIATION_LOW) actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
+        else actuate_pitcherons(0, MAINTAIN_ANGLE);
         // return false; (by fall through)
     }
     return false;

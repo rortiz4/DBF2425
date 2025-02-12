@@ -14,7 +14,8 @@ enum Pitcheron_Actions {
     ROLL_LEFT, // 1
     ROLL_RIGHT, // 2
     PITCH_NOSE_UP, // 3
-    PITCH_NOSE_DOWN // 4
+    PITCH_NOSE_DOWN, // 4
+    MAINTAIN_ANGLE // 5
 };
 
 struct Pitcheron_Data {

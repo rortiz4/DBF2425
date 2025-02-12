@@ -94,6 +94,7 @@ void log_data(void* pvParameters) {
     digitalWrite(BUILTIN_LED_PIN, LOW);
     unsigned long line_num = LINE_NUM_START; // These are only initialized once
     while(true) {
+        //Serial.println("Datalogging Task");
         static unsigned long start_time = micros();
         // Serial.println("Taking GPS Semaphore");
         // xSemaphoreTake(gps_done, portMAX_DELAY);
@@ -102,7 +103,7 @@ void log_data(void* pvParameters) {
         // Serial.println("Taking IMU Semaphore");
         // xSemaphoreTake(imu_done, portMAX_DELAY);
         xQueueReceive(IMU_Queue, &imu, portMAX_DELAY);
-
+        
         // Serial.println("Taking Airspeed Semaphore");
         // xSemaphoreTake(airspeed_done, portMAX_DELAY);
         xQueueReceive(Airspeed_Queue, &pitot, portMAX_DELAY);
@@ -124,7 +125,7 @@ void log_data(void* pvParameters) {
         // Serial.println("Taking Autopilot Semaphore");
         xQueueReceive(Autopilot_Queue, &AP_data, portMAX_DELAY);
         xQueueReceive(Pitcheron_Queue, &pitcherons, portMAX_DELAY);
-
+        //vTaskResume(autopilot_task);
 
         // Log Data to datafile
         if (log_to_SD) {
@@ -223,7 +224,7 @@ void log_data(void* pvParameters) {
             gps.hours, gps.minutes, gps.seconds, gps.hundredths, gps.satellites);
 
             // Autopilot Data
-            Serial.printf("%u,%s,%.*f,%.*f,%.*f,", AP_data.sensor_id, AP_data.flight_phase, \
+            Serial.printf("%u,%s,%s,%.*f,%.*f,%.*f,", AP_data.sensor_id, AP_data.flight_phase, \
             AP_data.ap_mode, DP_DATA, AP_data.ap_target_bearing, DP_DATA, AP_data.ap_target_roll, DP_DATA, AP_data.ap_target_pitch);
 
             // Servo Data
@@ -238,16 +239,17 @@ void log_data(void* pvParameters) {
 
         line_num++;
         // Resume suspended reading tasks after logging data to SD card and loop again.
-        if(digitalRead(BUILTIN_LED_PIN) == HIGH) {
+        if((digitalRead(BUILTIN_LED_PIN) == HIGH) && (gps.satellites != 0)) {
             digitalWrite(BUILTIN_LED_PIN, LOW);
         }
         else {
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
-        //vTaskDelay(pdMS_TO_TICKS(10)); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
         vTaskResume(read_gps_task);
         vTaskResume(read_imu_task);
         vTaskResume(read_pitot_task);
+        vTaskResume(autopilot_task);
+        //vTaskDelay(pdMS_TO_TICKS(10)); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
     }
 }
 

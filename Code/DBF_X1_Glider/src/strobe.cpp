@@ -13,15 +13,18 @@ void init_strobe() {
 }
 
 void blink_strobe(void* pvParameters) {
-    // Pattern: BlinkBlink......BlinkBlinnk......
-    digitalWrite(STROBE_LED_PIN, HIGH);
-    vTaskDelay(pdMS_TO_TICKS(BLINK_ON_TIME_ms));
-    digitalWrite(STROBE_LED_PIN, LOW);
-    vTaskDelay(pdMS_TO_TICKS(BLINK_OFF_TIME_ms));
-    digitalWrite(STROBE_LED_PIN, HIGH);
-    vTaskDelay(pdMS_TO_TICKS(BLINK_ON_TIME_ms));
-    digitalWrite(STROBE_LED_PIN, LOW);
-    vTaskDelay(pdMS_TO_TICKS(BLINK_OFF_TIME_ms));
-    
-    vTaskDelay(pdMS_TO_TICKS(BLINK_RESET_TIME_ms));
+    while(true) {
+        //Serial.println("Strobe Task");
+        // Pattern: BlinkBlink......BlinkBlink......
+        digitalWrite(STROBE_LED_PIN, HIGH);
+        vTaskDelay(pdMS_TO_TICKS(BLINK_ON_TIME_ms));
+        digitalWrite(STROBE_LED_PIN, LOW);
+        vTaskDelay(pdMS_TO_TICKS(BLINK_OFF_TIME_ms));
+        digitalWrite(STROBE_LED_PIN, HIGH);
+        vTaskDelay(pdMS_TO_TICKS(BLINK_ON_TIME_ms));
+        digitalWrite(STROBE_LED_PIN, LOW);
+        vTaskDelay(pdMS_TO_TICKS(BLINK_OFF_TIME_ms));
+        
+        vTaskDelay(pdMS_TO_TICKS(BLINK_RESET_TIME_ms));
+    }
 }

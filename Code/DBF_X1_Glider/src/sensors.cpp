@@ -37,9 +37,9 @@ void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
     Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v2.1");
-    Serial.println("By Daniel Noronha & Ricky Ortiz");
-    Serial.println("Last Software Update: January 14, 2025");
+    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.0");
+    Serial.println("By Daniel Noronha, Ricky Ortiz, and Matthew Zagrocki");
+    Serial.println("Last Software Update: February 12, 2025");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
@@ -47,7 +47,7 @@ void init_low_level_hw() {
     Wire.setClock(I2C_BUS_SPEED);
     Serial.println("Serial IO & I2C Initialized Successfully!");
     pinMode(BUILTIN_LED_PIN, OUTPUT);
-    digitalWrite(BUILTIN_LED_PIN, LOW);
+    digitalWrite(BUILTIN_LED_PIN, HIGH);
 }
 
 /* Sensor Initialization Functions */
@@ -154,6 +154,7 @@ void read_bno085(void* pvParameters) {
     IMU_Data new_imu_data;
     new_imu_data.sensor_id = 0;
     while(true) {
+        //Serial.println("BNO Reading Task");
         bool rot_read = false;
         bool acc_read = false;
         bool grav_read = false;
@@ -275,6 +276,7 @@ void read_abp2(void* pvParameters) {
 
     new_airspeed_data.sensor_id = 1;
     while(true) {
+        //Serial.println("Pitot Reading Task");
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
 
         Wire.beginTransmission(id);
@@ -318,6 +320,7 @@ void read_gps(void* pvParameters) {
     bool first_fix = false;
     new_gps_data.sensor_id = 2;
     while(true) {
+        //Serial.println("GPS Reading Task");
         xSemaphoreTake(I2C_MUTEX, portMAX_DELAY);
         myGNSS.checkUblox();
         xSemaphoreGive(I2C_MUTEX);
