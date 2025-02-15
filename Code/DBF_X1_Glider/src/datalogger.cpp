@@ -239,17 +239,18 @@ void log_data(void* pvParameters) {
 
         line_num++;
         // Resume suspended reading tasks after logging data to SD card and loop again.
-        if((digitalRead(BUILTIN_LED_PIN) == HIGH) && (gps.satellites != 0)) {
-            digitalWrite(BUILTIN_LED_PIN, LOW);
-        }
-        else {
+        if((digitalRead(BUILTIN_LED_PIN) == LOW) && (gps.satellites != 0)) {
             digitalWrite(BUILTIN_LED_PIN, HIGH);
         }
+        else {
+            digitalWrite(BUILTIN_LED_PIN, LOW);
+        }
+
+        //vTaskDelay(pdMS_TO_TICKS(10)); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
         vTaskResume(read_gps_task);
         vTaskResume(read_imu_task);
         vTaskResume(read_pitot_task);
         vTaskResume(autopilot_task);
-        //vTaskDelay(pdMS_TO_TICKS(10)); // Extra Delay (in milliseconds) to make serial monitor data human-readable. Too fast otherwise!
     }
 }
 

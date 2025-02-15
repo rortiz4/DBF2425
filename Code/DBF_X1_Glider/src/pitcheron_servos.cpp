@@ -31,10 +31,11 @@ Servo right_servo;
 void init_servos_trim(void) {
     Serial.println("Initializing Servos...");
 	ESP32PWM::allocateTimer(0); // Allocate timer for both servos
+	ESP32PWM::allocateTimer(1); // Allocate timer for both servos
     left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
     right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
-    left_servo.attach(SERVO_L_PIN); // Attach left servo to pin
-    right_servo.attach(SERVO_R_PIN); // Attach right servo to pin
+    left_servo.attach(SERVO_L_PIN, 900, 2100); // Attach left servo to pin
+    right_servo.attach(SERVO_R_PIN, 900, 2100); // Attach right servo to pin
     Serial.println("Servo Initialization Complete. Start Trimming."); 
 }
 

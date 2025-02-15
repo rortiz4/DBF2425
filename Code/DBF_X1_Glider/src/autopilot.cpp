@@ -4,10 +4,11 @@
 #include "pitcheron_servos.h"
 
 #define AP_ENABLE true // Set true to enable Autopilot, false to disable.
-#define GND_TEST true // Disables LANDED state
+#define GND_TEST false // Disables LANDED state
 #define ROLL_PROT_EN true
 #define PITCH_PROT_EN true
-#define STALL_PROT_EN false
+#define STALL_PROT_EN true
+#define PITCH_SPEED_CONTROL true
 #define OVSPD_PROT_EN true
 
 // Note: Convention used by autopilot: + means right/up, - means left/down. ALL ANGLES IN DEGREES AND SPEEDS IN ft/s.
@@ -124,22 +125,30 @@ void Autopilot_MASTER(void* pvParameters) {
                     u_turn_done = true;
                     ap_flight_phase = GPS_HOMING;
                 }
+                else ap_flight_phase = U_TURN_HDG;
             }
         }
         else if (ap_flight_phase == GPS_HOMING) {
             AP_log_data.flight_phase = "GPS_HOMING";
             // Always verify flight envelope first
             if (Autopilot_FLT_ENVELOPE_PROT(sensor_data.roll, sensor_data.pitch, sensor_data.airspeed, AP_log_data)) {
-                if (Autopilot_HDG_SEL_GPS(sensor_data.roll, sensor_data.yaw, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data)) {
+                if (Autopilot_HDG_SEL_GPS(sensor_data.roll, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data) && PITCH_SPEED_CONTROL) {
                     ap_flight_phase = SPD_DESCENT;
                 }
+                else ap_flight_phase = GPS_HOMING;
             } 
         }
         else if (ap_flight_phase == SPD_DESCENT) {
             AP_log_data.flight_phase = "SPD_DESCENT";
             // Always verify flight envelope first
             if (Autopilot_FLT_ENVELOPE_PROT(sensor_data.roll, sensor_data.pitch, sensor_data.airspeed, AP_log_data)) {
-                if (Autopilot_SPD_TRIM(sensor_data.airspeed, sensor_data.pitch, SPD_TARGET, AP_log_data)) {
+                if (Autopilot_HDG_SEL_GPS(sensor_data.roll, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data)) {
+                    if (Autopilot_SPD_TRIM(sensor_data.airspeed, sensor_data.pitch, SPD_TARGET, AP_log_data)) {
+                        ap_flight_phase = GPS_HOMING;
+                    }
+                    else ap_flight_phase = SPD_DESCENT;
+                }
+                else {
                     ap_flight_phase = GPS_HOMING;
                 }
             }
@@ -228,11 +237,11 @@ bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilo
     return false;
 }
 
-bool Autopilot_HDG_SEL_GPS(float roll, float yaw, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data) {
+bool Autopilot_HDG_SEL_GPS(float roll, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data) {
     AP_log_data.ap_mode = "AP_HDG_SEL_GPS";
     unsigned int pitcheron_angle = 0;
-    static const float target_bearing = calculate_bearing(current_lat, current_long, target_lat, target_long, yaw); // Gets target_bearing from current and target coordinates (continuously recalculated)
-    float bearing_correction = signed_bearing_correction(yaw, target_bearing); // Continuously recalculated from current bearing.
+    static const float target_bearing = calculate_bearing(current_lat, current_long, target_lat, target_long, current_heading); // Gets target_bearing from current and target coordinates (continuously recalculated)
+    float bearing_correction = signed_bearing_correction(current_heading, target_bearing); // Continuously recalculated from current bearing.
     float target_roll = Kp_ROLL_BEARING_CORR*bearing_correction; // To turn right, target roll is right
     if (target_roll < ROLL_LIM_MIN) target_roll = ROLL_LIM_MIN;
     else if (target_roll > ROLL_LIM_MAX) target_roll = ROLL_LIM_MAX;

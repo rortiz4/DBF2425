@@ -10,10 +10,10 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define RHO 1.27287 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define RHO 1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
-#define STARTUP_DELAY 5000 // x2
+#define STARTUP_DELAY 2500 // ms x2
 #define I2C_BUS_SPEED 400000 // 100kHz Default
 #define MIN_AIRSPEED 5*3.28084 // m/s (pitot reads 0 if under 5m/s due to inaccuracy)
 #define UTC_TIMEZONE_OFFSET -4 // EST is 4 hours behind UTC
@@ -21,6 +21,8 @@
 #define NMEA_BUFFER_SIZE 255
 #define INIT_DELAY 100
 
+#define FAKE_LATITUDE 0
+#define FAKE_LONGITUDE 0
 
 /* Instantiate sensor classes and types */
 // BNO085
@@ -37,9 +39,9 @@ void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
     Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.0");
+    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.2");
     Serial.println("By Daniel Noronha, Ricky Ortiz, and Matthew Zagrocki");
-    Serial.println("Last Software Update: February 12, 2025");
+    Serial.println("Last Software Update: February 14, 2025");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);

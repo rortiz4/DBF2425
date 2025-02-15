@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "esp_sleep.h"
 #include "tasks.h"
 #include "queues.h"
 #include "semaphores.h"
@@ -14,11 +15,12 @@
 #define SD_LOG true // Log Data to SD Card file
 #define TRIM_SERVOS false // Choose whether to run this program in regular or servo trimming mode
 #define SERVO_ACTUATION_TESTS true // Perform pitcheron servo tests during initialization? (ignored if TRIM_SERVOS=true)
-#define BOOTUP_DELAY 3000 //ms
+#define BOOTUP_DELAY 2000 //ms
 
 void setup() {
     delay(BOOTUP_DELAY);
-    pinMode(RELEASE_DET_PIN, INPUT_PULLUP);
+    pinMode(RELEASE_DET_PIN, INPUT);
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)RELEASE_DET_PIN, HIGH); 
     init_low_level_hw();
     init_strobe();
     init_queues();
@@ -30,11 +32,12 @@ void setup() {
     digitalWrite(BUILTIN_LED_PIN, LOW);
 
     init_SD(SERIAL_LOG, SD_LOG); // FORMAT SD CARD TO FAT32 BEFORE FIRST USE
-    init_tasks();
 
     Serial.println("All Systems Initialized. Waiting for GPIO 19 release detection (LOW=>HIGH)...");
-    while(digitalRead(RELEASE_DET_PIN) != HIGH) delay(10); // To marginally reduce power usage and avoid watchdog reset.
+    delay(100);
+    esp_light_sleep_start();
 
+    init_tasks();
     Serial.println("All Systems ONLINE! All Tasks Started Successfully! RTOS Task Scheduler RUNNING!\n");
 }
 
