@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <Adafruit_Neopixel.h>
+#include "Adafruit_NeoPixel.h"
 #include "strobe.h"
 #include "pin_map.h"
 
@@ -38,7 +38,7 @@ void blink_strobe(void* pvParameters) {
         for (unsigned int i = 0; i < NUM_LEDS; i++) leds.setPixelColor(i, leds.Color(0, 0, 0));
         leds.show();
         vTaskDelay(pdMS_TO_TICKS(BLINK_OFF_TIME_ms));
-        for (unsigned int i = 0; i < NUM_LEDS; i++) leds.setPixelColor(i, leds.Color(0, 0, 255));
+        for (unsigned int i = 0; i < NUM_LEDS; i++) leds.setPixelColor(i, leds.Color(0, 255, 0));
         leds.show();
         vTaskDelay(pdMS_TO_TICKS(BLINK_ON_TIME_ms));
         for (unsigned int i = 0; i < NUM_LEDS; i++) leds.setPixelColor(i, leds.Color(0, 0, 0));

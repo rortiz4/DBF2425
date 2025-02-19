@@ -10,7 +10,7 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define RHO 1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define RHO 1.35715 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
 #define STARTUP_DELAY 2500 // ms x2

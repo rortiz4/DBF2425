@@ -4,20 +4,23 @@
 #include "pitcheron_servos.h"
 #include "queues.h"
 
+#define DISABLE_SERVO_L false
+#define DISABLE_SERVO_R false
+
 // Basic Assumption: Pitcheron Angle = Servo Angle
 // https://cdn.shopify.com/s/files/1/0570/1766/3541/files/X08H_V6.0_Technical_Specifcation.pdf?v=1700472376
 // https://kstservos.com/collections/glider-wing-servos/products/x08h-plus-horizontal-lug-servo-5-3kg-cm-0-09s-9-5g-8mm
 
 // Servos l and r are connected to left and right pitcherons as viewed from behind the glider.
 // CW_CONVENTION: Clockwise = Positive Angle, Counterclockwise = Negative Angle. Set CONVENTION to -1 if opposite (still assumes 2 identical servos)
-#define CW_CONVENTION 1 // 1=Clockwise, -1=Counterclockwise
+#define CW_CONVENTION -1 // 1=Clockwise Positive, -1=Counterclockwise Positive
 
 // CG_CONVENTION: Determine whether fully assembled glider CG is behind or in front of the pitcherons (wingtip test!)
 #define CG_CONVENTION 1 // 1 = Pitcherons point up, nose goes down (pitcherons behind CG, like elevators). -1 = Pitcherons point up, nose goes up (pitcherons in front of CG).
 
 // Note: center would be 0 degrees left and right in code, but may not be the case in real life. Trim offset added to center
-#define RAW_TRIM_L 0 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
-#define RAW_TRIM_R 0 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
+#define RAW_TRIM_L 3 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
+#define RAW_TRIM_R 20 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
 // Define Servo Physical Limits
 #define MIN_SERVO_us 1000 // us
 #define MAX_SERVO_us 2000 // us
@@ -30,12 +33,12 @@ Servo right_servo;
 
 void init_servos_trim(void) {
     Serial.println("Initializing Servos...");
-	ESP32PWM::allocateTimer(0); // Allocate timer for both servos
-	ESP32PWM::allocateTimer(1); // Allocate timer for both servos
-    left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
-    right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
-    left_servo.attach(SERVO_L_PIN, 900, 2100); // Attach left servo to pin
-    right_servo.attach(SERVO_R_PIN, 900, 2100); // Attach right servo to pin
+	if (!DISABLE_SERVO_L) ESP32PWM::allocateTimer(0); // Allocate timer for both servos
+	if (!DISABLE_SERVO_R) ESP32PWM::allocateTimer(1); // Allocate timer for both servos
+    if (!DISABLE_SERVO_L) left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
+    if (!DISABLE_SERVO_R) right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
+    if (!DISABLE_SERVO_L) left_servo.attach(SERVO_L_PIN, 900, 2100); // Attach left servo to pin
+    if (!DISABLE_SERVO_R) right_servo.attach(SERVO_R_PIN, 900, 2100); // Attach right servo to pin
     Serial.println("Servo Initialization Complete. Start Trimming."); 
 }
 
@@ -47,21 +50,22 @@ int angle2us(int angle, int angle_min, int angle_max, int us_min, int us_max) {
 }
 
 void actuate_servo_l(int raw_angle_servo_l) {
-    left_servo.writeMicroseconds(angle2us(raw_angle_servo_l, MIN_SERVO_ANGLE, MAX_SERVO_ANGLE, MIN_SERVO_us, MAX_SERVO_us));
+    if (!DISABLE_SERVO_L) left_servo.writeMicroseconds(angle2us(raw_angle_servo_l, MIN_SERVO_ANGLE, MAX_SERVO_ANGLE, MIN_SERVO_us, MAX_SERVO_us));
 }
 
 void actuate_servo_r(int raw_angle_servo_r) {
-    right_servo.writeMicroseconds(angle2us(raw_angle_servo_r, MIN_SERVO_ANGLE, MAX_SERVO_ANGLE, MIN_SERVO_us, MAX_SERVO_us));
+    if (!DISABLE_SERVO_R) right_servo.writeMicroseconds(angle2us(raw_angle_servo_r, MIN_SERVO_ANGLE, MAX_SERVO_ANGLE, MIN_SERVO_us, MAX_SERVO_us));
 }
 
 // This function initializes the servos, checks range of travel, and then centers servos
 void init_servos(bool actuation_test = true) {
     Serial.println("Initializing Servos...");
-	ESP32PWM::allocateTimer(0); // Allocate timer for both servos
-    left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
-    right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
-    left_servo.attach(SERVO_L_PIN); // Attach left servo to pin
-    right_servo.attach(SERVO_R_PIN); // Attach right servo to pin
+	if (!DISABLE_SERVO_L) ESP32PWM::allocateTimer(0); // Allocate timer for both servos
+	if (!DISABLE_SERVO_R) ESP32PWM::allocateTimer(1); // Allocate timer for both servos
+    if (!DISABLE_SERVO_L) left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
+    if (!DISABLE_SERVO_R) right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
+    if (!DISABLE_SERVO_L) left_servo.attach(SERVO_L_PIN); // Attach left servo to pin
+    if (!DISABLE_SERVO_R) right_servo.attach(SERVO_R_PIN); // Attach right servo to pin
 
     // Set servos to 0 position
     Serial.printf("Centering LEFT servo centered with trim @%ddeg.\n", RAW_TRIM_L);

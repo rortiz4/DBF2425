@@ -4,18 +4,18 @@
 #include "pitcheron_servos.h"
 
 #define AP_ENABLE true // Set true to enable Autopilot, false to disable.
-#define GND_TEST false // Disables LANDED state
+#define GND_TEST true // Disables LANDED state
 #define ROLL_PROT_EN true
 #define PITCH_PROT_EN true
-#define STALL_PROT_EN true
+#define STALL_PROT_EN false
 #define PITCH_SPEED_CONTROL true
-#define OVSPD_PROT_EN true
+#define OVSPD_PROT_EN false
 
 // Note: Convention used by autopilot: + means right/up, - means left/down. ALL ANGLES IN DEGREES AND SPEEDS IN ft/s.
 // Flight Envelope Limits
-#define MAX_PITCHERON_ANGLE 40
-#define STALL_SPEED 10
-#define OVERSPEED 150
+#define MAX_PITCHERON_ANGLE SERVO_MAX_ALLOWED // Defined in pitcheron_servos.h
+#define STALL_SPEED 30
+#define OVERSPEED 60
 #define ROLL_LIM_MIN -30
 #define ROLL_LIM_MAX 30
 #define PITCH_LIM_MIN -20
@@ -23,15 +23,15 @@
 
 // Autopilot Settings and Control Limits
 #define U_TURN_BEARING_CHANGE -180 // deg: From DBF 2024 Competition Rules
-#define BULLSEYE_LATITUDE 32.2653 // degN: From DBF 2024 Competition Rules
-#define BULLSEYE_LONGITUDE -111.2736 // degW: From DBF 2024 Competition Rules
+#define BULLSEYE_LATITUDE 41.5194//32.2653 // degN: From DBF 2024 Competition Rules
+#define BULLSEYE_LONGITUDE -86.2400//-111.2736 // degW: From DBF 2024 Competition Rules
 #define HDG_TARGET_DEVIATION_LOW -5
 #define HDG_TARGET_DEVIATION_HIGH 5
 #define ROLL_TARGET_DEVIATION_LOW -5
 #define ROLL_TARGET_DEVIATION_HIGH 5
-#define SPD_TARGET 50 // ft/s
-#define SPD_TARGET_DEVIATION_LOW -10 // STALL_SPEED = 40 ft/s
-#define SPD_TARGET_DEVIATION_HIGH 25
+#define SPD_TARGET 45 // ft/s
+#define SPD_TARGET_DEVIATION_LOW -10 // -10 means STALL_SPEED = 40 ft/s with 50 ft/s target
+#define SPD_TARGET_DEVIATION_HIGH 10
 #define PITCH_TARGET_DEVIATION_LOW -3
 #define PITCH_TARGET_DEVIATION_HIGH 3
 

@@ -3,6 +3,7 @@
 
 // Mini-program for trimming servos if requested by setting TRIM_SERVOS flag
 void trim_servos() {
+        init_servos_trim();
         int trim_l = 0;
         int trim_r = 0;
         Serial.println("Servo Trim Program Running. Note down RAW_TRIM_L, RAW_TRIM_R, and CW_CONVENTION needed to CENTER PITCHERONS.");
