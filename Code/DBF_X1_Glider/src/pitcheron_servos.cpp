@@ -64,8 +64,8 @@ void init_servos(bool actuation_test = true) {
 	if (!DISABLE_SERVO_R) ESP32PWM::allocateTimer(1); // Allocate timer for both servos
     if (!DISABLE_SERVO_L) left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
     if (!DISABLE_SERVO_R) right_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
-    if (!DISABLE_SERVO_L) left_servo.attach(SERVO_L_PIN); // Attach left servo to pin
-    if (!DISABLE_SERVO_R) right_servo.attach(SERVO_R_PIN); // Attach right servo to pin
+    if (!DISABLE_SERVO_L) left_servo.attach(SERVO_L_PIN, 900, 2100); // Attach left servo to pin
+    if (!DISABLE_SERVO_R) right_servo.attach(SERVO_R_PIN, 900, 2100); // Attach right servo to pin
 
     // Set servos to 0 position
     Serial.printf("Centering LEFT servo centered with trim @%ddeg.\n", RAW_TRIM_L);

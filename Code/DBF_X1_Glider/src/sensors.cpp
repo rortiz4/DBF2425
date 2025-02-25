@@ -41,7 +41,7 @@ void init_low_level_hw() {
     delay(STARTUP_DELAY);
     Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.2");
     Serial.println("By Daniel Noronha, Ricky Ortiz, and Matthew Zagrocki");
-    Serial.println("Last Software Update: February 14, 2025");
+    Serial.println("Last Software Update: February 24, 2025");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);

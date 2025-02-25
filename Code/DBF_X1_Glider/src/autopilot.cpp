@@ -4,12 +4,12 @@
 #include "pitcheron_servos.h"
 
 #define AP_ENABLE true // Set true to enable Autopilot, false to disable.
-#define GND_TEST true // Disables LANDED state
+#define GND_TEST false // Disables LANDED state
 #define ROLL_PROT_EN true
 #define PITCH_PROT_EN true
-#define STALL_PROT_EN false
+#define STALL_PROT_EN true
 #define PITCH_SPEED_CONTROL true
-#define OVSPD_PROT_EN false
+#define OVSPD_PROT_EN true
 
 // Note: Convention used by autopilot: + means right/up, - means left/down. ALL ANGLES IN DEGREES AND SPEEDS IN ft/s.
 // Flight Envelope Limits

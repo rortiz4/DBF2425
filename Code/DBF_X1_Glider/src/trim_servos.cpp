@@ -8,8 +8,8 @@ void trim_servos() {
         int trim_r = 0;
         Serial.println("Servo Trim Program Running. Note down RAW_TRIM_L, RAW_TRIM_R, and CW_CONVENTION needed to CENTER PITCHERONS.");
         Serial.println("Reset/Reprogram with TRIM_SERVOS set to false to disable trim mode. Then update RAW_TRIM flags in pitcheron_servos.cpp.");
-        Serial.println("Send all commands over Serial when prompted as Text (ASCII) with \\n line terminator.");
-        Serial.println("ALWAYS USE (int)DEGREES for any angles (+/-).");
+        Serial.println("Send all commands over Serial when prompted as Text (ASCII) with \\n (LF) LINE TERMINATOR.");
+        Serial.println("Always use (int)DEGREES for any angles (+/-).");
         actuate_servo_l(0);
         actuate_servo_r(0);
         Serial.printf("Current trim settings: trim_l = %ddeg, trim_r = %ddeg\n", trim_l, trim_r);
