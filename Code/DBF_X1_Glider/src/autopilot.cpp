@@ -22,7 +22,7 @@
 #define PITCH_LIM_MAX 20
 
 // Autopilot Settings and Control Limits
-#define U_TURN_BEARING_CHANGE -180 // deg: From DBF 2024 Competition Rules
+#define U_TURN_BEARING_CHANGE 180 // deg: From DBF 2024 Competition Rules
 #define BULLSEYE_LATITUDE 41.5194//32.2653 // degN: From DBF 2024 Competition Rules
 #define BULLSEYE_LONGITUDE -86.2400//-111.2736 // degW: From DBF 2024 Competition Rules
 #define HDG_TARGET_DEVIATION_LOW -5
