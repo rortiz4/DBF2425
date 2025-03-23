@@ -71,7 +71,7 @@ void init_SD(bool serial_log, bool SD_log) {
     const char csv_header[] =   "Line_Num,ESP32_Time_s,ID0_IMU,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
                                 "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1_ASPD,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
                                 "ID2_GPS,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
-                                "ID3_AP,Flight_Phase,AP_Mode,AP_HDG,AP_ROLL_TGT,AP_PITCH_TGT,"
+                                "ID3_AP,Flight_Phase,AP_Mode,AP_HDG_TGT,AP_ROLL_TGT,AP_PITCH_TGT,"
                                 "ID4_SERVO,servo_L_angle,servo_R_angle,servo_Angle_TGT,servo_Action_TGT\n";
 
     Serial.println("Writing .csv header:");

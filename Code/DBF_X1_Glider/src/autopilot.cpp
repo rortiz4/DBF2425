@@ -4,12 +4,12 @@
 #include "pitcheron_servos.h"
 
 #define AP_ENABLE true // Set true to enable Autopilot, false to disable.
-#define GND_TEST false // Disables LANDED state
+#define LANDED_DISABLED true // Disables LANDED state
 #define ROLL_PROT_EN true
 #define PITCH_PROT_EN true
-#define STALL_PROT_EN true
+#define STALL_PROT_EN false
 #define PITCH_SPEED_CONTROL true
-#define OVSPD_PROT_EN true
+#define OVSPD_PROT_EN false
 
 // Note: Convention used by autopilot: + means right/up, - means left/down. ALL ANGLES IN DEGREES AND SPEEDS IN ft/s.
 // Flight Envelope Limits
@@ -30,8 +30,8 @@
 #define ROLL_TARGET_DEVIATION_LOW -5
 #define ROLL_TARGET_DEVIATION_HIGH 5
 #define SPD_TARGET 45 // ft/s
-#define SPD_TARGET_DEVIATION_LOW -10 // -10 means STALL_SPEED = 40 ft/s with 50 ft/s target
-#define SPD_TARGET_DEVIATION_HIGH 10
+#define SPD_TARGET_DEVIATION_LOW -15 // -10 means STALL_SPEED = 40 ft/s with 50 ft/s target
+#define SPD_TARGET_DEVIATION_HIGH 15
 #define PITCH_TARGET_DEVIATION_LOW -3
 #define PITCH_TARGET_DEVIATION_HIGH 3
 
@@ -112,7 +112,7 @@ void Autopilot_MASTER(void* pvParameters) {
         if (!AP_ENABLE) {
             actuate_pitcherons(0, MAINTAIN_ANGLE); // Do nothing if AP has been disabled through flag.
         }
-        else if (sensor_data.airspeed == 0 && !GND_TEST) {
+        else if (sensor_data.airspeed == 0 && !LANDED_DISABLED) {
             actuate_pitcherons(0, WINGS_LEVEL);
             AP_log_data.flight_phase = "LANDED";
             AP_log_data.ap_mode = "AP_OFF";
@@ -132,7 +132,7 @@ void Autopilot_MASTER(void* pvParameters) {
             AP_log_data.flight_phase = "GPS_HOMING";
             // Always verify flight envelope first
             if (Autopilot_FLT_ENVELOPE_PROT(sensor_data.roll, sensor_data.pitch, sensor_data.airspeed, AP_log_data)) {
-                if (Autopilot_HDG_SEL_GPS(sensor_data.roll, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data) && PITCH_SPEED_CONTROL) {
+                if (Autopilot_HDG_SEL_GPS(true, sensor_data.roll, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data) && PITCH_SPEED_CONTROL) {
                     ap_flight_phase = SPD_DESCENT;
                 }
                 else ap_flight_phase = GPS_HOMING;
@@ -142,7 +142,7 @@ void Autopilot_MASTER(void* pvParameters) {
             AP_log_data.flight_phase = "SPD_DESCENT";
             // Always verify flight envelope first
             if (Autopilot_FLT_ENVELOPE_PROT(sensor_data.roll, sensor_data.pitch, sensor_data.airspeed, AP_log_data)) {
-                if (Autopilot_HDG_SEL_GPS(sensor_data.roll, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data)) {
+                if (Autopilot_HDG_SEL_GPS(false, sensor_data.roll, sensor_data.heading, sensor_data.latitude, sensor_data.longitude, BULLSEYE_LATITUDE, BULLSEYE_LONGITUDE, AP_log_data)) {
                     if (Autopilot_SPD_TRIM(sensor_data.airspeed, sensor_data.pitch, SPD_TARGET, AP_log_data)) {
                         ap_flight_phase = GPS_HOMING;
                     }
@@ -168,6 +168,7 @@ bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilo
     else if (target_roll > ROLL_LIM_MAX) target_roll = ROLL_LIM_MAX;
     AP_log_data.ap_target_bearing = target_bearing;
     AP_log_data.ap_target_roll = target_roll;
+    AP_log_data.ap_target_pitch = 0;
 
     // First case: Flight within desired envelope for bearing
     if ((bearing_correction >= HDG_TARGET_DEVIATION_LOW) && (bearing_correction <= HDG_TARGET_DEVIATION_HIGH)) {
@@ -237,16 +238,17 @@ bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilo
     return false;
 }
 
-bool Autopilot_HDG_SEL_GPS(float roll, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data) {
+bool Autopilot_HDG_SEL_GPS(bool act_true, float roll, float current_heading, float current_lat, float current_long, float target_lat, float target_long, Autopilot_Data& AP_log_data) {
     AP_log_data.ap_mode = "AP_HDG_SEL_GPS";
     unsigned int pitcheron_angle = 0;
-    static const float target_bearing = calculate_bearing(current_lat, current_long, target_lat, target_long, current_heading); // Gets target_bearing from current and target coordinates (continuously recalculated)
+    float target_bearing = calculate_bearing(current_lat, current_long, target_lat, target_long, current_heading); // Gets target_bearing from current and target coordinates (continuously recalculated)
     float bearing_correction = signed_bearing_correction(current_heading, target_bearing); // Continuously recalculated from current bearing.
     float target_roll = Kp_ROLL_BEARING_CORR*bearing_correction; // To turn right, target roll is right
     if (target_roll < ROLL_LIM_MIN) target_roll = ROLL_LIM_MIN;
     else if (target_roll > ROLL_LIM_MAX) target_roll = ROLL_LIM_MAX;
     AP_log_data.ap_target_bearing = target_bearing;
     AP_log_data.ap_target_roll = target_roll;
+    AP_log_data.ap_target_pitch = 0;
 
     // First case: Flight within desired envelope for bearing
     if ((bearing_correction >= HDG_TARGET_DEVIATION_LOW) && (bearing_correction <= HDG_TARGET_DEVIATION_HIGH)) {
@@ -254,7 +256,7 @@ bool Autopilot_HDG_SEL_GPS(float roll, float current_heading, float current_lat,
         AP_log_data.ap_target_roll = 0;
         // Verify that roll also within desired envelope for 0 bearing correction
         if ((target_roll-roll >= ROLL_TARGET_DEVIATION_LOW) && (target_roll-roll <= ROLL_TARGET_DEVIATION_HIGH)) {
-            actuate_pitcherons(0, MAINTAIN_ANGLE);
+            if (act_true) actuate_pitcherons(0, MAINTAIN_ANGLE);
             return true; // Don't do anything (Handover to AP_SPD_TRIM)
         }
         // Second case: Flight within desired envelope for bearing but not for roll
@@ -324,6 +326,8 @@ bool Autopilot_SPD_TRIM(float airspeed, float pitch, float target_airspeed, Auto
     // Limit checking for target_pitch
     if (target_pitch < PITCH_LIM_MIN) target_pitch = PITCH_LIM_MIN;
     else if (target_pitch > PITCH_LIM_MAX) target_pitch = PITCH_LIM_MAX;
+    AP_log_data.ap_target_pitch = target_pitch;
+    AP_log_data.ap_target_roll = 0;
     // First case: Flight within desired speed envelope
     if (((speed_correction >= SPD_TARGET_DEVIATION_LOW)) && (speed_correction <= SPD_TARGET_DEVIATION_HIGH)) {
         target_pitch = 0;
@@ -368,6 +372,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         AP_log_data.ap_mode = "AP_PROT_ROLL_MIN";
         float target_roll = ROLL_LIM_MAX;
         AP_log_data.ap_target_roll = target_roll;
+        AP_log_data.ap_target_pitch = 0;
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
         if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, ROLL_RIGHT);
@@ -376,6 +381,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         AP_log_data.ap_mode = "AP_PROT_ROLL_MAX";
         float target_roll = ROLL_LIM_MIN;
         AP_log_data.ap_target_roll = target_roll;
+        AP_log_data.ap_target_pitch = 0;
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_ROLL*(fabs(target_roll - roll)));
         if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, ROLL_LEFT);
@@ -384,6 +390,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         AP_log_data.ap_mode = "AP_PROT_PITCH_MIN";
         float target_pitch = PITCH_LIM_MAX;
         AP_log_data.ap_target_pitch = target_pitch;
+        AP_log_data.ap_target_roll = 0;
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
         if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
@@ -392,6 +399,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         AP_log_data.ap_mode = "AP_PROT_PITCH_MAX";
         float target_pitch = PITCH_LIM_MIN;
         AP_log_data.ap_target_pitch = target_pitch;
+        AP_log_data.ap_target_roll = 0;
         float pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
         if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
@@ -401,6 +409,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         // float target_airspeed = STALL_SPEED+OVERCORRECTION_SPEED;
         float target_pitch = PITCH_LIM_MIN;
         AP_log_data.ap_target_pitch = target_pitch;
+        AP_log_data.ap_target_roll = 0;
         unsigned int pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
         if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_DOWN);
@@ -410,6 +419,7 @@ bool Autopilot_FLT_ENVELOPE_PROT(float roll, float pitch, float airspeed, Autopi
         // float target_airspeed = OVERSPEED-OVERCORRECTION_SPEED;
         float target_pitch = PITCH_LIM_MAX;
         AP_log_data.ap_target_pitch = target_pitch;
+        AP_log_data.ap_target_roll = 0;
         unsigned int pitcheron_angle = (unsigned int)round(Kp_SERVO_ANGLE_PITCH*(fabs(target_pitch - pitch)));
         if (pitcheron_angle > MAX_PITCHERON_ANGLE) pitcheron_angle = MAX_PITCHERON_ANGLE;
         actuate_pitcherons(pitcheron_angle, PITCH_NOSE_UP);
@@ -423,6 +433,8 @@ bool Autopilot_ROLL_FIXED(float roll, float target_roll, Autopilot_Data& AP_log_
     AP_log_data.ap_mode = "AP_ROLL_FIXED";
     if (target_roll < ROLL_LIM_MIN) target_roll = ROLL_LIM_MIN;
     else if (target_roll > ROLL_LIM_MAX) target_roll = ROLL_LIM_MAX;
+    AP_log_data.ap_target_roll = target_roll;
+    AP_log_data.ap_target_pitch = 0;
     if ((target_roll-roll >= ROLL_TARGET_DEVIATION_LOW) && (target_roll-roll <= ROLL_TARGET_DEVIATION_HIGH)) {
         actuate_pitcherons(0, MAINTAIN_ANGLE);
         return true; // Don't do anything (Handover to AP_SPD_TRIM)
@@ -460,6 +472,7 @@ bool Autopilot_PITCH_FIXED(float pitch, float target_pitch, Autopilot_Data& AP_l
     if (target_pitch < PITCH_LIM_MIN) target_pitch = PITCH_LIM_MIN;
     else if (target_pitch > PITCH_LIM_MAX) target_pitch = PITCH_LIM_MAX;
     AP_log_data.ap_target_pitch = target_pitch;
+    AP_log_data.ap_target_roll = 0;
     if ((target_pitch-pitch >= PITCH_TARGET_DEVIATION_LOW) && (target_pitch-pitch <= PITCH_TARGET_DEVIATION_HIGH)) {
         actuate_pitcherons(0, MAINTAIN_ANGLE);
         return true; // Don't do anything (handover to AP_HDG_SEL_IMU)

@@ -1,4 +1,6 @@
 #include <Arduino.h>
+//#include "soc/soc.h"
+//#include "soc/rtc_cntl_reg.h"
 #include "esp_sleep.h"
 #include "tasks.h"
 #include "queues.h"
@@ -16,9 +18,11 @@
 #define TRIM_SERVOS false // Choose whether to run this program in regular or servo trimming mode
 #define SERVO_ACTUATION_TESTS true // Perform pitcheron servo tests during initialization? (ignored if TRIM_SERVOS=true)
 #define BOOTUP_DELAY 2000 //ms
+#define RELEASE_DELAY 100 //ms
 
 void setup() {
     delay(BOOTUP_DELAY);
+    //WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
     pinMode(RELEASE_DET_PIN, INPUT);
     esp_sleep_enable_ext0_wakeup((gpio_num_t)RELEASE_DET_PIN, HIGH); 
     init_low_level_hw();
@@ -36,12 +40,13 @@ void setup() {
     Serial.println("All Systems Initialized. Waiting for GPIO 19 release detection (LOW=>HIGH)...");
     delay(100);
     esp_light_sleep_start();
+    delay(RELEASE_DELAY);
 
     init_tasks();
     Serial.println("All Systems ONLINE! All Tasks Started Successfully! RTOS Task Scheduler RUNNING!\n");
 }
 
 void loop() {
-    ;//vTaskStartScheduler;
+    ;//vTaskStartScheduler();
 }
 

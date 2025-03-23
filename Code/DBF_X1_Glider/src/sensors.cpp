@@ -10,7 +10,8 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define RHO 1.35715 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define RHO 1.284524 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define ROLL_INVERTED true // true if PCB is inverted (top) relative to airplane
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
 #define STARTUP_DELAY 2500 // ms x2
@@ -39,9 +40,9 @@ void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
     Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.2");
+    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.3");
     Serial.println("By Daniel Noronha, Ricky Ortiz, and Matthew Zagrocki");
-    Serial.println("Last Software Update: February 24, 2025");
+    Serial.println("Last Software Update: March 23, 2025");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);
@@ -185,6 +186,10 @@ void read_bno085(void* pvParameters) {
                         float euler_vector[3] = {0.0,0.0,0.0};
                         quat2eul(new_imu_data.rotation[0],new_imu_data.rotation[1],new_imu_data.rotation[2],new_imu_data.rotation[3],euler_vector,true);
                         new_imu_data.euler[0] = -euler_vector[0]; // Pitch
+                        if (ROLL_INVERTED) {
+                            if (euler_vector[1] > 0) euler_vector[1] -= 180;
+                            else euler_vector[1] += 180;
+                        }
                         new_imu_data.euler[1] = euler_vector[1]; // Roll
                         new_imu_data.euler[2] = -euler_vector[2]+180; // Yaw (normalized from 0 to 360)
                         if (new_imu_data.euler[2] < 0) new_imu_data.euler[2] = 0;
@@ -373,7 +378,7 @@ void read_gps(void* pvParameters) {
         latitude_mdeg = latitude_mdeg / 1000000;
         longitude_mdeg = longitude_mdeg / 1000000;
         gnd_speed = gnd_speed * (1.68781 / 1000); // Knots to ft/s
-        alt = alt / 1000;
+        alt = (alt / 1000)*3.28084; // m to ft
         heading = heading / 1000;
 
         // Store Data in struct, then send to queue

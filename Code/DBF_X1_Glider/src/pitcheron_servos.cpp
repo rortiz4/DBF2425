@@ -19,8 +19,8 @@
 #define CG_CONVENTION 1 // 1 = Pitcherons point up, nose goes down (pitcherons behind CG, like elevators). -1 = Pitcherons point up, nose goes up (pitcherons in front of CG).
 
 // Note: center would be 0 degrees left and right in code, but may not be the case in real life. Trim offset added to center
-#define RAW_TRIM_L 3 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
-#define RAW_TRIM_R 20 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
+#define RAW_TRIM_L 0 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
+#define RAW_TRIM_R -5 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
 // Define Servo Physical Limits
 #define MIN_SERVO_us 1000 // us
 #define MAX_SERVO_us 2000 // us
@@ -131,6 +131,7 @@ void init_servos(bool actuation_test = true) {
 
 // This function actuates 2 servos using actuate_servo_l and actuate_servo_r. Specify ROLL_LEFT/ROLL_RIGHT/PITCH_NOSE_UP/PITCH_NOSE_DOWN or WINGS_LEVEL for act_type_direction.
 void actuate_pitcherons(unsigned int angle, enum Pitcheron_Actions act_type_direction) {
+    // Never call this function twice in a row unless xQueueReceive(Pitcheron_Queue, &pitcherons, portMAX_DELAY) has been called in between.
     Pitcheron_Data new_pitcheron_data;
     new_pitcheron_data.sensor_id = 4;
     new_pitcheron_data.angle_target = angle;
