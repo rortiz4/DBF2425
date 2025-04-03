@@ -33,6 +33,8 @@ Servo right_servo;
 
 void init_servos_trim(void) {
     Serial.println("Initializing Servos...");
+    if (DISABLE_SERVO_L) Serial.println("Left Servo Disabled. Code will run as if it is enabled, but without physically initializing/actuating.");
+    if (DISABLE_SERVO_R) Serial.println("Right Servo Disabled. Code will run as if it is enabled, but without physically initializing/actuating.");
 	if (!DISABLE_SERVO_L) ESP32PWM::allocateTimer(0); // Allocate timer for both servos
 	if (!DISABLE_SERVO_R) ESP32PWM::allocateTimer(1); // Allocate timer for both servos
     if (!DISABLE_SERVO_L) left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo
@@ -60,6 +62,8 @@ void actuate_servo_r(int raw_angle_servo_r) {
 // This function initializes the servos, checks range of travel, and then centers servos
 void init_servos(bool actuation_test = true) {
     Serial.println("Initializing Servos...");
+    if (DISABLE_SERVO_L) Serial.println("Left Servo Disabled. Code will run as if it is enabled, but without physically initializing/actuating.");
+    if (DISABLE_SERVO_R) Serial.println("Right Servo Disabled. Code will run as if it is enabled, but without physically initializing/actuating.");
 	if (!DISABLE_SERVO_L) ESP32PWM::allocateTimer(0); // Allocate timer for both servos
 	if (!DISABLE_SERVO_R) ESP32PWM::allocateTimer(1); // Allocate timer for both servos
     if (!DISABLE_SERVO_L) left_servo.setPeriodHertz(PWM_FREQUENCY);    // 333 Hz servo

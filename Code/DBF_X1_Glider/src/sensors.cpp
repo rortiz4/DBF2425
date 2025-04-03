@@ -10,7 +10,7 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define RHO 1.284524 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define RHO 1.214438 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
 #define ROLL_INVERTED true // true if PCB is inverted (top) relative to airplane
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec
@@ -21,9 +21,6 @@
 #define GPS_SAMPLE_RATE 25 // Hz (25Hz max)
 #define NMEA_BUFFER_SIZE 255
 #define INIT_DELAY 100
-
-#define FAKE_LATITUDE 0
-#define FAKE_LONGITUDE 0
 
 /* Instantiate sensor classes and types */
 // BNO085
@@ -40,9 +37,9 @@ void init_low_level_hw() {
     // Startup Delay is blocking but that's ok.
     Serial.begin(SERIAL_MONITOR_BAUDRATE);
     delay(STARTUP_DELAY);
-    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.3");
+    Serial.println("\nESP32 DBF 2025 Payload X1 Glider RTOS Data Collection Software - v3.4");
     Serial.println("By Daniel Noronha, Ricky Ortiz, and Matthew Zagrocki");
-    Serial.println("Last Software Update: March 23, 2025");
+    Serial.println("Last Software Update: April 03, 2025");
     Serial.println("Wish Me Luck!!!\n");
 
     delay(STARTUP_DELAY);

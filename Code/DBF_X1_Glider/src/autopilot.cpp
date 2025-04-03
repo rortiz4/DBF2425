@@ -18,8 +18,8 @@
 #define OVERSPEED 60
 #define ROLL_LIM_MIN -30
 #define ROLL_LIM_MAX 30
-#define PITCH_LIM_MIN -20
-#define PITCH_LIM_MAX 20
+#define PITCH_LIM_MIN -18
+#define PITCH_LIM_MAX 18
 
 // Autopilot Settings and Control Limits
 #define U_TURN_BEARING_CHANGE 180 // deg: From DBF 2024 Competition Rules
@@ -38,8 +38,8 @@
 // PID Proportionality Constants (leave margin for min/max to avoid exceeding flight envelope limits)
 #define Kp_ROLL_BEARING_CORR 1// Roll proportional to amount of turning required (yaw change)
 #define Kp_PITCH_SPD_CORR -1// MUST BE NEGATIVE!!! Pitch proportional to amount of speed change required (current speed error from target)
-#define Kp_SERVO_ANGLE_ROLL 1// Servo Angle proportional to error in roll from target
-#define Kp_SERVO_ANGLE_PITCH 1// Servo Angle proportional to error in pitch from target
+#define Kp_SERVO_ANGLE_ROLL 0.3// Servo Angle proportional to error in roll from target
+#define Kp_SERVO_ANGLE_PITCH 0.5// Servo Angle proportional to error in pitch from target
 
 
 // Utility Functions for bearings
