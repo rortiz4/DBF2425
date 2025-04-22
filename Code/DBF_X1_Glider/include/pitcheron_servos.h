@@ -8,6 +8,7 @@
 #define MAX_SERVO_ANGLE 60 // deg (unused except for internal angle2us mapping or manual trimming override because dangerous!)
 #define SERVO_MIN_ALLOWED -9
 #define SERVO_MAX_ALLOWED 9
+
 enum Pitcheron_Actions {
     WINGS_LEVEL, // 0 (could also do WINGS_LEVEL = 0 for custom assignment, and so on.)
     ROLL_LEFT, // 1

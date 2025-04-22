@@ -4,8 +4,8 @@
 #include "pitcheron_servos.h"
 #include "queues.h"
 
-#define DISABLE_SERVO_L false
-#define DISABLE_SERVO_R false
+#define DISABLE_SERVO_L true
+#define DISABLE_SERVO_R true
 
 // Basic Assumption: Pitcheron Angle = Servo Angle
 // https://cdn.shopify.com/s/files/1/0570/1766/3541/files/X08H_V6.0_Technical_Specifcation.pdf?v=1700472376
@@ -19,12 +19,13 @@
 #define CG_CONVENTION 1 // 1 = Pitcherons point up, nose goes down (pitcherons behind CG, like elevators). -1 = Pitcherons point up, nose goes up (pitcherons in front of CG).
 
 // Note: center would be 0 degrees left and right in code, but may not be the case in real life. Trim offset added to center
-#define RAW_TRIM_L 0 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
-#define RAW_TRIM_R -5 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
+#define RAW_TRIM_L 9 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
+#define RAW_TRIM_R 7 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_r) to center right servo when testing (regardless of CONVENTION).
 // Define Servo Physical Limits
 #define MIN_SERVO_us 1000 // us
 #define MAX_SERVO_us 2000 // us
 #define PWM_FREQUENCY 333 // Hz
+#define INITIAL_ANGLE 14
 
 #define ACTUATION_DELAY_ms 1000 // How long to wait after each actuation test
 
@@ -128,7 +129,7 @@ void init_servos(bool actuation_test = true) {
         delay(ACTUATION_DELAY_ms);
 
         Serial.println("Servo Testing Complete! Verify both pitcherons are now correctly trimmed/centered.");
-    }
+   }
 
 
 }

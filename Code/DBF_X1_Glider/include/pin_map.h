@@ -18,7 +18,7 @@
 #define STROBE_LED_PIN 20
 
 // Separate left and right servo pin defs
-#define SERVO_L_PIN 13
-#define SERVO_R_PIN 14
+#define SERVO_L_PIN 14
+#define SERVO_R_PIN 13
 
 #endif

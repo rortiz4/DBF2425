@@ -23,8 +23,11 @@
 
 // Autopilot Settings and Control Limits
 #define U_TURN_BEARING_CHANGE 180 // deg: From DBF 2024 Competition Rules
-#define BULLSEYE_LATITUDE 41.5194//32.2653 // degN: From DBF 2024 Competition Rules
-#define BULLSEYE_LONGITUDE -86.2400//-111.2736 // degW: From DBF 2024 Competition Rules
+#define RIGHT_TURN_BIAS true // Takes priority over LEFT_TURN_BIAS if both are true
+#define LEFT_TURN_BIAS false
+#define TURN_BIAS 20 // Will turn right for corrections up to -160 during U Turn
+#define BULLSEYE_LATITUDE 32.2653//32.2653 //32.1201// //41.5194 // degN: From DBF 2024 Competition Rules
+#define BULLSEYE_LONGITUDE -111.2736//-111.2736 //-110.7630// //-86.2400 // degW: From DBF 2024 Competition Rules
 #define HDG_TARGET_DEVIATION_LOW -5
 #define HDG_TARGET_DEVIATION_HIGH 5
 #define ROLL_TARGET_DEVIATION_LOW -5
@@ -98,6 +101,7 @@ void Autopilot_MASTER(void* pvParameters) {
     int ap_flight_phase = U_TURN_HDG;
     AP_log_data.flight_phase = "U_TURN_HDG";
     AP_log_data.ap_mode = "AP_OFF";
+    bool started = false;
     bool u_turn_done = false;
     AP_log_data.ap_target_bearing = 0; // just for initialization
     AP_log_data.ap_target_roll = 0; // just for initialization
@@ -116,6 +120,11 @@ void Autopilot_MASTER(void* pvParameters) {
             actuate_pitcherons(0, WINGS_LEVEL);
             AP_log_data.flight_phase = "LANDED";
             AP_log_data.ap_mode = "AP_OFF";
+        }
+        else if (!started) {
+            // Always start in HDG_SEL_IMU mode to get correct 180 degree turn bearing
+            Autopilot_HDG_SEL_IMU(sensor_data.roll, sensor_data.yaw, U_TURN_BEARING_CHANGE, AP_log_data);
+            started = true;
         }
         else if ((ap_flight_phase == U_TURN_HDG) && !u_turn_done) {
             AP_log_data.flight_phase = "U_TURN_HDG";
@@ -163,6 +172,8 @@ bool Autopilot_HDG_SEL_IMU(float roll, float yaw, float bearing_change, Autopilo
     unsigned int pitcheron_angle = 0;
     static const float target_bearing = wrap_angle(yaw + bearing_change); // Gets target_bearing only from first yaw reading (on release detection).
     float bearing_correction = signed_bearing_correction(yaw, target_bearing); // Continuously recalculated from current bearing.
+    if ((bearing_correction >= -180) && (bearing_correction <= (-180+TURN_BIAS)) && RIGHT_TURN_BIAS) bearing_correction = -bearing_correction;
+    else if ((bearing_correction >= (180-TURN_BIAS)) && (bearing_correction <= 180) && LEFT_TURN_BIAS) bearing_correction = -bearing_correction;
     float target_roll = Kp_ROLL_BEARING_CORR*bearing_correction; // To turn right, target roll is right
     if (target_roll < ROLL_LIM_MIN) target_roll = ROLL_LIM_MIN;
     else if (target_roll > ROLL_LIM_MAX) target_roll = ROLL_LIM_MAX;

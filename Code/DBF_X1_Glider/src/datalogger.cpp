@@ -35,52 +35,51 @@ void init_SD(bool serial_log, bool SD_log) {
     digitalWrite(SD_CS, HIGH);
     mySPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
     // SPI.setFrequency(1000000);
-    while (!SD.begin(SD_CS, mySPI, 80000000)) {
-        Serial.println("Card failed, or not present. Retrying..."); // Retry if SD card can't be initialized
-        delay(500);
+    if (!SD.begin(SD_CS, mySPI, 80000000)) {
+        Serial.println("Card failed, or not present.");
+        log_to_SD = false;
     }
     Serial.println("DONE!");
-    Serial.println("Searching for next available filename");
-    // Get next filenumber for filename 
-    sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
-    while(SD.exists(filename)) { 
-        file_counter++;
-        if (file_counter >= 1000) {
-            file_counter = FILE_COUNT_START;
-            Serial.println("Overwriting file /data000.csv... 1000+ files in storage. Please DELETE SOME!!!");
-            sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
-            break;
+    if (log_to_SD == true) {
+        Serial.println("Searching for next available filename");
+        // Get next filenumber for filename 
+        sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
+        while(SD.exists(filename)) { 
+            file_counter++;
+            if (file_counter >= 1000) {
+                file_counter = FILE_COUNT_START;
+                Serial.println("Overwriting file /data000.csv... 1000+ files in storage. Please DELETE SOME!!!");
+                sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
+                break;
+            }
+            else sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
         }
-        else sprintf(filename, "/data%03u.csv", file_counter); // Create the filename with the counter
-    }
 
-    datafile = SD.open(filename, FILE_WRITE);
-    // Open File
-    if (datafile) {
-        Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
-    }
-    else {
-        Serial.printf("Failed to Open File: /data%03u.csv for writing!\n", file_counter);
-        while(!datafile) {
-            Serial.println("Retrying file open...");
-            delay(INIT_DELAY_SD);
-            datafile = SD.open(filename, FILE_WRITE);
+        datafile = SD.open(filename, FILE_WRITE);
+        // Open File
+        if (datafile) {
+            Serial.printf("Writing to file: /data%03u.csv\n", file_counter);
         }
-    }
-    // Write Header to file
-    const char csv_header[] =   "Line_Num,ESP32_Time_s,ID0_IMU,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
-                                "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1_ASPD,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
-                                "ID2_GPS,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
-                                "ID3_AP,Flight_Phase,AP_Mode,AP_HDG_TGT,AP_ROLL_TGT,AP_PITCH_TGT,"
-                                "ID4_SERVO,servo_L_angle,servo_R_angle,servo_Angle_TGT,servo_Action_TGT\n";
+        else {
+            Serial.printf("Failed to Open File: /data%03u.csv for writing!\n", file_counter);
+            log_to_SD = false;
+            return;
+        }
+        // Write Header to file
+        const char csv_header[] =   "Line_Num,ESP32_Time_s,ID0_IMU,LinAcc_x,LinAcc_y,LinAcc_z,Pitch,Roll,Yaw,Gyro_x,Gyro_y,Gyro_z,Magnet_uT_x,Magnet_uT_y,Magnet_uT_z,"
+                                    "Grav_x,Grav_y,Grav_z,Quat_re,Quat_i,Quat_j,Quat_k,ID1_ASPD,RawPress_Pa,temp_C,RawAirspeed,CorrAirspeed,"
+                                    "ID2_GPS,latitude,longitude,heading,gnd_speed,altitude,hours,mins,secs,hundredths,satellites,"
+                                    "ID3_AP,Flight_Phase,AP_Mode,AP_HDG_TGT,AP_ROLL_TGT,AP_PITCH_TGT,"
+                                    "ID4_SERVO,servo_L_angle,servo_R_angle,servo_Angle_TGT,servo_Action_TGT\n";
 
-    Serial.println("Writing .csv header:");
-    datafile.print(csv_header);
-    datafile.flush(); 
-    if (log_to_serial) {
-        Serial.print(csv_header);
+        Serial.println("Writing .csv header:");
+        datafile.print(csv_header);
+        datafile.flush(); 
+        if (log_to_serial) {
+            Serial.print(csv_header);
+        }
+        Serial.println(".csv Header Writing DONE!");
     }
-    Serial.println(".csv Header Writing DONE!");
 }
 
 void log_data(void* pvParameters) {
