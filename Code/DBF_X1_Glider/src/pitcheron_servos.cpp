@@ -4,8 +4,8 @@
 #include "pitcheron_servos.h"
 #include "queues.h"
 
-#define DISABLE_SERVO_L true
-#define DISABLE_SERVO_R true
+#define DISABLE_SERVO_L false
+#define DISABLE_SERVO_R false
 
 // Basic Assumption: Pitcheron Angle = Servo Angle
 // https://cdn.shopify.com/s/files/1/0570/1766/3541/files/X08H_V6.0_Technical_Specifcation.pdf?v=1700472376
