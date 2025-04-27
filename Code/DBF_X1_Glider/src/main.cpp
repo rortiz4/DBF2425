@@ -17,7 +17,7 @@
 #define SD_LOG true // Log Data to SD Card file (failsafe for SD card popping out if true is included. If that happens, true constant is ignored.)
 #define TRIM_SERVOS false // Choose whether to run this program in regular or servo trimming mode
 #define SERVO_ACTUATION_TESTS true // Perform pitcheron servo tests during initialization? (ignored if TRIM_SERVOS=true)
-#define RELEASE_INIT false // Wait for release before running main code
+#define RELEASE_INIT true // Wait for release before running main code
 #define BOOTUP_DELAY 2000 //ms
 #define INSTALL_DEBOUNCE_DELAY 250 //ms
 #define INSTALL_DELAY 10000
