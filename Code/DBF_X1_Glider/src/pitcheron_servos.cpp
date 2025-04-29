@@ -5,9 +5,15 @@
 #include "queues.h"
 
 #define DISABLE_SERVOS false
+#ifndef DISABLE_SERVOS
+#define DISABLE_SERVO_L false
+#define DISABLE_SERVO_R false
+#endif
+
+#ifdef DISABLE_SERVOS
 #define DISABLE_SERVO_L DISABLE_SERVOS
 #define DISABLE_SERVO_R DISABLE_SERVOS
-
+#endif
 // Basic Assumption: Pitcheron Angle = Servo Angle
 // https://cdn.shopify.com/s/files/1/0570/1766/3541/files/X08H_V6.0_Technical_Specifcation.pdf?v=1700472376
 // https://kstservos.com/collections/glider-wing-servos/products/x08h-plus-horizontal-lug-servo-5-3kg-cm-0-09s-9-5g-8mm
