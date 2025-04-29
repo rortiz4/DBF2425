@@ -10,7 +10,7 @@
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
 #include <MicroNMEA.h> //http://librarymanager/All#MicroNMEA
 
-#define RHO 1.142363 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
+#define RHO 1.24155 //1.225 //kg/m^3 - from https://www.omnicalculator.com/physics/air-density#what-is-the-density-of-air
 #define ROLL_INVERTED true // true if PCB is inverted (top) relative to airplane
 
 #define SERIAL_MONITOR_BAUDRATE 250000 // bits/sec

@@ -16,7 +16,7 @@
 #define CW_CONVENTION -1 // 1=Clockwise Positive, -1=Counterclockwise Positive
 
 // CG_CONVENTION: Determine whether fully assembled glider CG is behind or in front of the pitcherons (wingtip test!)
-#define CG_CONVENTION 1 // 1 = Pitcherons point up, nose goes down (pitcherons behind CG, like elevators). -1 = Pitcherons point up, nose goes up (pitcherons in front of CG).
+#define CG_CONVENTION -1 // 1 = Pitcherons point up, nose goes down (pitcherons behind CG, like elevators). -1 = Pitcherons point up, nose goes up (pitcherons in front of CG).
 
 // Note: center would be 0 degrees left and right in code, but may not be the case in real life. Trim offset added to center
 #define RAW_TRIM_L 9 // deg. Set this to whatever angle must be requested in independent servo tests (actuate_servo_l) to center left servo when testing (regardless of CONVENTION).
@@ -129,6 +129,10 @@ void init_servos(bool actuation_test = true) {
         delay(ACTUATION_DELAY_ms);
 
         Serial.println("Servo Testing Complete! Verify both pitcherons are now correctly trimmed/centered.");
+        actuate_servo_l(RAW_TRIM_L+(-INITIAL_ANGLE*CW_CONVENTION));
+        actuate_servo_r(RAW_TRIM_R+(INITIAL_ANGLE*CW_CONVENTION));
+        Serial.println("Initial Pitcheron Angle Set");
+        delay(ACTUATION_DELAY_ms);
    }
 
 

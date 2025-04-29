@@ -3,6 +3,9 @@
 #include "queues.h"
 #include "pitcheron_servos.h"
 
+#define BULLSEYE_LATITUDE 41.5192//32.2653 //32.1201// //41.5194 // degN: From DBF 2024 Competition Rules
+#define BULLSEYE_LONGITUDE -86.2399//-111.2736 //-110.7630// //-86.2400 // degW: From DBF 2024 Competition Rules
+
 #define AP_ENABLE true // Set true to enable Autopilot, false to disable.
 #define LANDED_DISABLED true // Disables LANDED state
 #define ROLL_PROT_EN true
@@ -26,8 +29,6 @@
 #define RIGHT_TURN_BIAS true // Takes priority over LEFT_TURN_BIAS if both are true
 #define LEFT_TURN_BIAS false
 #define TURN_BIAS 20 // Will turn right for corrections up to -160 during U Turn
-#define BULLSEYE_LATITUDE 32.2653//32.2653 //32.1201// //41.5194 // degN: From DBF 2024 Competition Rules
-#define BULLSEYE_LONGITUDE -111.2736//-111.2736 //-110.7630// //-86.2400 // degW: From DBF 2024 Competition Rules
 #define HDG_TARGET_DEVIATION_LOW -5
 #define HDG_TARGET_DEVIATION_HIGH 5
 #define ROLL_TARGET_DEVIATION_LOW -5
