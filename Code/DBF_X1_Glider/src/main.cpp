@@ -22,6 +22,7 @@
 #define INSTALL_DEBOUNCE_DELAY 250 //ms
 #define INSTALL_DELAY 10000
 #define RELEASE_DELAY 250 //ms
+#define THROW_DELAY 5000 //ms
 
 void setup() {
     delay(BOOTUP_DELAY);
@@ -68,6 +69,7 @@ void setup() {
             delay(RELEASE_DELAY); // for debouncing release detection magnet
         }
     }
+    delay(THROW_DELAY);
     init_tasks();
     Serial.println("All Systems ONLINE! All Tasks Started Successfully! RTOS Task Scheduler RUNNING!\n");
 
