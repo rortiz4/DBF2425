@@ -165,35 +165,35 @@ void actuate_pitcherons(unsigned int angle, enum Pitcheron_Actions act_type_dire
             break; 
         case ROLL_LEFT:
             // Servo rotation in same direction = Pitcherons actuate in opposite directions
-            actuate_servo_l(RAW_TRIM_L-(angle*CW_CONVENTION));
-            actuate_servo_r(RAW_TRIM_R-(angle*CW_CONVENTION));
+            actuate_servo_l(RAW_TRIM_L-((int)angle*CW_CONVENTION));
+            actuate_servo_r(RAW_TRIM_R-((int)angle*CW_CONVENTION));
             new_pitcheron_data.action_target = "ROLL_LEFT";
-            new_pitcheron_data.raw_angle_l = RAW_TRIM_L-(angle*CW_CONVENTION);
-            new_pitcheron_data.raw_angle_r = RAW_TRIM_R-(angle*CW_CONVENTION);
+            new_pitcheron_data.raw_angle_l = RAW_TRIM_L-((int)angle*CW_CONVENTION);
+            new_pitcheron_data.raw_angle_r = RAW_TRIM_R-((int)angle*CW_CONVENTION);
             break;
         case ROLL_RIGHT:
             // Servo rotation in same direction = Pitcherons actuate in opposite directions
-            actuate_servo_l(RAW_TRIM_L+(angle*CW_CONVENTION));
-            actuate_servo_r(RAW_TRIM_R+(angle*CW_CONVENTION));
+            actuate_servo_l(RAW_TRIM_L+((int)angle*CW_CONVENTION));
+            actuate_servo_r(RAW_TRIM_R+((int)angle*CW_CONVENTION));
             new_pitcheron_data.action_target = "ROLL_RIGHT";
-            new_pitcheron_data.raw_angle_l = RAW_TRIM_L+(angle*CW_CONVENTION);
-            new_pitcheron_data.raw_angle_r = RAW_TRIM_R+(angle*CW_CONVENTION);
+            new_pitcheron_data.raw_angle_l = RAW_TRIM_L+((int)angle*CW_CONVENTION);
+            new_pitcheron_data.raw_angle_r = RAW_TRIM_R+((int)angle*CW_CONVENTION);
             break;
         case PITCH_NOSE_UP:
             // Servo rotation in opposite direction = Pitcherons actuate in same directions
-            actuate_servo_l(RAW_TRIM_L-(angle*CW_CONVENTION*CG_CONVENTION));
-            actuate_servo_r(RAW_TRIM_R+(angle*CW_CONVENTION*CG_CONVENTION));
+            actuate_servo_l(RAW_TRIM_L-((int)angle*CW_CONVENTION*CG_CONVENTION));
+            actuate_servo_r(RAW_TRIM_R+((int)angle*CW_CONVENTION*CG_CONVENTION));
             new_pitcheron_data.action_target = "PITCH_NOSE_UP";
-            new_pitcheron_data.raw_angle_l = RAW_TRIM_L-(angle*CW_CONVENTION*CG_CONVENTION);
-            new_pitcheron_data.raw_angle_r = RAW_TRIM_R+(angle*CW_CONVENTION*CG_CONVENTION);   
+            new_pitcheron_data.raw_angle_l = RAW_TRIM_L-((int)angle*CW_CONVENTION*CG_CONVENTION);
+            new_pitcheron_data.raw_angle_r = RAW_TRIM_R+((int)angle*CW_CONVENTION*CG_CONVENTION);   
             break;
         case PITCH_NOSE_DOWN:
             // Servo rotation in opposite direction = Pitcherons actuate in same directions 
-            actuate_servo_l(RAW_TRIM_L+(angle*CW_CONVENTION*CG_CONVENTION));
-            actuate_servo_r(RAW_TRIM_R-(angle*CW_CONVENTION*CG_CONVENTION));
+            actuate_servo_l(RAW_TRIM_L+((int)angle*CW_CONVENTION*CG_CONVENTION));
+            actuate_servo_r(RAW_TRIM_R-((int)angle*CW_CONVENTION*CG_CONVENTION));
             new_pitcheron_data.action_target = "PITCH_NOSE_DOWN";
-            new_pitcheron_data.raw_angle_l = RAW_TRIM_L+(angle*CW_CONVENTION*CG_CONVENTION);
-            new_pitcheron_data.raw_angle_r = RAW_TRIM_R-(angle*CW_CONVENTION*CG_CONVENTION); 
+            new_pitcheron_data.raw_angle_l = RAW_TRIM_L+((int)angle*CW_CONVENTION*CG_CONVENTION);
+            new_pitcheron_data.raw_angle_r = RAW_TRIM_R-((int)angle*CW_CONVENTION*CG_CONVENTION); 
             break;
         case MAINTAIN_ANGLE:
             new_pitcheron_data.action_target = "MAINTAIN_ANGLE";
